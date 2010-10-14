@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -Wall
+CFLAGS=-c -Wall -Imodules/
 LDFLAGS=
 SOURCES=main.cpp $(filter-out $(SRC_EXCEPT), $(wildcard modules/*.cpp))
 OBJECTS=$(SOURCES:.cpp=.o)
