@@ -1,12 +1,11 @@
 #include <list>
 #include <iostream>
-#include "worker.h"
+
 #include "simulator.h"
 
 using namespace std;
 
 Simulator::Simulator() {
-  clocktime = 0;
   stopping = false;
 }
 
@@ -17,17 +16,21 @@ void Simulator::init() {
   cout << "\n";
   debug("Starting simulator");
 
+  // this will be read from file
   Worker *w1 = new Worker(1);
   workers.push_front(w1);
   
+
   Worker *w2 = new Worker(2);
+  if (w2->startWorker()) 
+    cout << "Started worker 2" << endl;
   workers.push_front(w2);
   
 }
 
 void Simulator::execute() {
   while (true) {
-    if (stopping || clocktime == 100)
+    if (stopping || currentTime == 50)
       break;
 
     debug("Executing");
@@ -40,7 +43,7 @@ void Simulator::execute() {
       (*worker)->execute();
     }
 
-    tick();
+    currentTime++;
   }
 
   cleanUp();
@@ -50,10 +53,6 @@ void Simulator::stop() {
   stopping = true;
 }
 
-void Simulator::tick() {
-  clocktime += 1;
-}
-
 bool Simulator::cleanUp() {
   debug("Stopping.");
   return true;
@@ -61,5 +60,5 @@ bool Simulator::cleanUp() {
 
 void Simulator::debug(const char* msg) {
   if (DEBUG)
-    cout << "[" << clocktime << "] " << msg << "\n";
+    cout << "[" << currentTime << "] " << msg << "\n";
 }

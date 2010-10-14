@@ -2,17 +2,18 @@
 #define __SIMULATOR__
 
 #include "worker.h"
+
 #define DEBUG true
+
+extern long currentTime;
 
 class Simulator {
   //Scheduler scheduler;
   //TaskGen *taskgenerator; 
   std::list<Worker *> workers;
-  long clocktime;
   bool stopping;
 
  private:
-  void tick();
   bool cleanUp();
   void debug(const char* msg);
 
