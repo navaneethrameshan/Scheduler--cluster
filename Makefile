@@ -17,4 +17,7 @@ clean:
 	@rm -f cc
 	@rm -f *.o
 	@rm -f modules/*.o
+	@rm -f *~
+	@rm -f modules/*~
+
 
