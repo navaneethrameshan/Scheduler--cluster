@@ -35,15 +35,20 @@ class Worker {
   WORKER_STATE state;
   WORKER_PROPERTIES properties;
   Job *current_job;
+  Job tmp_current_job;
   std::list<Job> jobs;
 
   void initialise();
   void compute();
   void finalise();
-  bool setState(enum worker_states newstate);
+  void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
   void debug(const char *msg);
+  void setDefaultProperties();
+  void removeJob();
+  bool startJob();
+  bool hasMoreWork();
 
  public:
   Worker(int id);
@@ -53,7 +58,7 @@ class Worker {
   bool submitJobs(std::list<Job> newjobs);
   enum worker_states getState();
   int getAvailableMemory();
-  bool getAcceptingJobs();
+  bool isAcceptingJobs();
   int getTotalMemory();
   float getCostPerHour();
   long getTimeToStart();

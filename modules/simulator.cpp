@@ -18,6 +18,7 @@ void Simulator::init() {
 
   // this will be read from file
   Worker *w1 = new Worker(1);
+  w1->startWorker();
   workers.push_front(w1);
   
 
@@ -35,6 +36,25 @@ void Simulator::execute() {
 
     debug("Executing");
 
+    if (currentTime == 15) {
+      Job job;
+      job.init(1, 20, 10);
+      list<Job> jobs;
+      jobs.push_front(job);
+      if (workers.front()->submitJobs(jobs)) 
+        debug("submitted job");
+    }
+
+    if (currentTime == 20) {
+      Job job;
+      job.init(1, 20, 10);
+      list<Job> jobs;
+      jobs.push_front(job);
+      if (workers.back()->submitJobs(jobs)) 
+        debug("submitted job");
+    }
+
+     
     // execute tg + scheduler
 
     // iterate all workers
@@ -60,5 +80,5 @@ bool Simulator::cleanUp() {
 
 void Simulator::debug(const char* msg) {
   if (DEBUG)
-    cout << "[" << currentTime << "] " << msg << "\n";
+    cout << "[Simulator][" << currentTime << "] " << msg << "\n";
 }
