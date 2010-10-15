@@ -91,6 +91,12 @@ long Worker::getInstructionsPerTime() {
   return properties.instructions_per_time;
 }
 
+bool Worker::ping() {
+  return (state.current == IDLE ||
+          state.current == COMPUTING ||
+          state.current == INITIALISING);
+}
+
 /* Private methods */
 bool Worker::startJob() {
   if (current_job == NULL) {

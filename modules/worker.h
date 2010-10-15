@@ -64,6 +64,7 @@ class Worker {
   long getTimeToStart();
   long getSwappingTime();
   long getInstructionsPerTime();
+  bool ping();
 
 };
 
