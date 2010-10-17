@@ -8,5 +8,6 @@ class Job{
        
        void init(int taskid, int jobid, int inst, int mem);
        void show();
-		
+	//added by wasif
+unsigned int getJobID();	
 	};

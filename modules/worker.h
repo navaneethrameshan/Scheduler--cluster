@@ -60,6 +60,9 @@ class Worker {
   long getSwappingTime();
   long getInstructionsPerTime();
 
+//added by wasif
+unsigned int getWorkerID();
+
 };
 
 #endif /* __WORKER__ */

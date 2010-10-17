@@ -1,0 +1,185 @@
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <list>
+#include "Scheduler.h"
+#include "Worker.h"
+using namespace std;
+ 
+  // default constructor
+Scheduler::Scheduler() 
+{
+  Scheduler("SINGLE_TASK", 1, NULL);
+}
+  
+  // constructor
+Scheduler:: Scheduler(string scheduler_mode, unsigned int scheduling_interval, list<Worker> workers)
+{
+  this->scheduler_mode = scheduler_mode;
+  this->scheduling_interval = scheduling_interval;
+  this->workers = workers;
+}
+  
+ 
+  //this function will start a worker and return its worker_id
+  unsigned int startWorkerNode()
+  {
+    list<Worker>::iterator i;
+        
+    for(i=L.begin(); i!=L.end();++i  ) {
+      if( (*i)->getState() == worker_states.OFFLINE ) {
+	(*i)->startWorker();
+	break;
+      }
+    }
+    return (*i)->getWorkerID();
+    
+  }
+ 
+  //this function will stop a worker and returns 0 on successful execution
+  unsigned int stopWorkerNode(unsigned int worker_id)
+  {
+  list<Worker>::iterator i;
+        
+    for(i=L.begin(); i!=L.end();++i  ) {
+      if( (*i)->getWorkerID() == worker_id ) {
+	(*i)->stopWorker();
+	break;
+      }
+    }
+    return 0;
+  }  
+  
+  
+  // TaskGenerator will submit jobs to the scheduler using this function
+  int submitJobs(List<Job> jobs)
+  {
+	list<Job>::iterator i;
+	for(i=jobs.begin(); i!=jobs.end();++i)
+	  {
+	queuedJobs.push_back(*i);
+	  }
+	return 0;
+      
+  }
+
+  // if required, the Simulator can submit new worker nodes to Scheduler 
+  int submitWorkers(List<Worker> workers)
+  {
+    	list<Worker>::iterator i;
+	for(i=workers.begin(); i!=workers.end();++i)
+	  {
+	workers.push_back(*i);
+	  }
+	return 0;
+  }
+
+unsigned int getNumberOfUsableWorkerNodes(List<Worker> workers)
+{
+  list<Worker>::iterator i;
+  for(i=workers.begin();i!=workers.end(),++i)
+    {
+      if( (*i)->getState() == worker_states.OFFLINE || (*i)->getState() == worker_states.COMPUTING ||(*i)->getState() == worker_states.IDLE )
+	{
+	  num_of_usable_worker_nodes++;
+	}
+    }
+  //Outputting
+  count<<"Number of Usable Worker Nodes: "<<num_of_usable_worker_nodes<<endl;
+}
+
+  //Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
+  int runScheduler()
+  { 
+    if( (int)this->queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+      {
+	//Nothing to do, so chilling!
+	cout<<"Nothing to do, so chilling!"<<endl;
+	return 0;
+      }
+    else 
+      {
+	if( (int)this->queuedJobs.size() > 0) 
+	  {
+	    //int number_of_queued_jobs = (int)this->queuedJobs.size();
+	    //int number_of_usable_worker_nodes = getNumberOfUsableNodes(this->workers); //Commented out - not required
+	    
+	    //start nodes for each job in queue
+	    list<Job>::iterator i;
+	    //if(number_of_queued_jobs <= number_of_usable_worker_nodes ) //Commented out because condition is not required
+	      for(i=queuedJobs.begin();i!=queuedJobs.end();++i)
+	      {
+		list<Worker>::iterator j;
+		for(j=this->workers.begin();i!=this->workers.end();++i)
+		  {
+		    if( (*j)->getState() == worker_states.COMPUTING || (*j)->getState() == worker_states.IDLE || (*j)->getState() == worker_states.OFFLINE )
+		      {
+			//(*j)->startWorker(); //starting a worker node
+			if( (*j)->submitJob(*i) == true ) //submitting Job to the worker node
+			  {
+			    this->runningJobs.push_back(*i); //adding the job to runningJobs
+			    this->queuedJobs.erase(i); //erasing the Job from the queuedJobs
+			    cout<<"Job "<<(*i)->getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
+			    break; //breaking the workers loop in any case and moving on with next job
+			  }
+			else
+			  {
+			    continue;
+			  }
+
+		      }
+		  }
+	      }
+
+	  }
+      }
+  }
+    
+
+  // a Worker node will notify the Scheduler when a job finishes its execution
+  int notifyJobCompletion(int job_id)
+  {
+    //find the job_id in the runningJobs List
+    list<Job>::iterator i;
+    for(i=runningJobs.begin();i!=runningJobs.end();++i)
+      {
+	if( (*i)->getJobID() == job_id )
+	  {
+	    this->completedJobs.push_back(*i); //marking the job as complete
+	    this->runningJobs.erase(*i); //erasing the job from runningJobs 
+	  }
+      }
+
+  }
+
+  // outputs the current state of a Scheduler object (can be static also; will be decided later on)
+  void print()
+  {
+    cout<<"Scheduler Mode: "<<scheduler_mode<<endl;
+    cout<<"Scheduling Interval: "<<scheduling_interval<<endl;
+    cout<<"Number of queuedJobs: "<<(int)this->queuedJobs.size()<<endl;
+    cout<<"Number of runningJobs: "<<(int)this->runningJobs.size()<<endl;
+    cout<<"Number of completedJobs: "<<(int)this->completedJobs.size()<<endl;
+    cout<<"Total Number of workers: "<<(int)this->workers.size()<<endl;
+
+    list<Worker>::iterator i;
+    int offline_workers_count = 0;
+    int idle_workers_count = 0;
+    int computing_workers_count = 0;
+
+    for(i=workers.begin();i!=workers.end();++i)
+      {
+	if( (*i)->getState() == worker_states.OFFLINE  )
+	  offline_workers_count++;
+	if( (*i)->getState() == worker_states.IDLE  )
+	  idle_workers_count++;
+	if( (*i)->getState() == worker_states.COMPUTING  )
+	  computing_workers_count++;
+      }
+
+  cout<<"-Number of OFFLINE workers: "<<offline_workers_count<<endl;
+  cout<<"-Number of IDLE workers: "<<idle_workers_count<<endl;
+  cout<<"-Number of COMPUTING workers: "<<computing_workers_count<<endl;
+
+  }
+
