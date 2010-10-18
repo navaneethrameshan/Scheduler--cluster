@@ -31,7 +31,7 @@ struct WORKER_STATE {
 class Worker {
 
  private:
-  int id;
+  unsigned int id;
   WORKER_STATE state;
   WORKER_PROPERTIES properties;
   Job *current_job;

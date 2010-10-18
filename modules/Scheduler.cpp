@@ -27,7 +27,7 @@ unsigned int Scheduler::startWorkerNode()
   list<Worker *>::iterator i;
   
   for(i=workers.begin(); i!=workers.end();++i  ) {
-    if( (*i)->getState() == "OFFLINE"/*worker_states.OFFLINE*/ ) {
+    if( (*i)->getState() == OFFLINE ) {
       (*i)->startWorker();
       break;
     }
@@ -41,7 +41,7 @@ unsigned int Scheduler::startWorkerNode()
   {
   list<Worker *>::iterator i;
         
-  for(i=workers.begin(); i!=workers().end();++i  ) {
+  for(i=workers.begin(); i!=workers.end();++i  ) {
       if( (*i)->getWorkerID() == worker_id ) {
 	(*i)->stopWorker();
 	break;
@@ -112,13 +112,16 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 	      for(i=queuedJobs.begin();i!=queuedJobs.end();++i)
 	      {
 		list<Worker *>::iterator j;
-		for(j=workers.begin();i!=workers.end();++i)
+		for(j=workers.begin();j!=workers.end();++j)
 		  {
 		    /* if( (*j)->getState() == worker_states.COMPUTING || (*j)->getState() == worker_states.IDLE || (*j)->getState() == worker_states.OFFLINE )*/
- if( (*j)->getState() =="COMPUTING" || (*j)->getState() == "IDLE" || (*j)->getState() == "OFFLINE" )
+ if( (*j)->getState() == COMPUTING || (*j)->getState() == IDLE || (*j)->getState() == OFFLINE )
 		      {
+
+			list<Job> jobs_to_submit;
+			jobs_to_submit.push_back(*(*i));
 			//(*j)->startWorker(); //starting a worker node
-			if( (*j)->submitJob(*i) == true ) //submitting Job to the worker node
+			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
@@ -136,11 +139,13 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
 	  }
       }
+
+    return 0; //returning successful exit everytime (for the time being)
   }
     
 
   // a Worker node will notify the Scheduler when a job finishes its execution
-  int Scheduler::notifyJobCompletion(int job_id)
+  int Scheduler::notifyJobCompletion(unsigned int job_id)
   {
     //find the job_id in the runningJobs List
     list<Job *>::iterator i;
@@ -152,6 +157,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 	    runningJobs.erase(i); //erasing the job from runningJobs 
 	  }
       }
+    return 0; //returning 0 always (for the time being)
 
   }
 
@@ -172,11 +178,11 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
     for(i=workers.begin();i!=workers.end();++i)
       {
-	if( (*i)->getState() == "OFFLINE"  )
+	if( (*i)->getState() == OFFLINE  )
 	  offline_workers_count++;
-	if( (*i)->getState() == "IDLE"  )
+	if( (*i)->getState() == IDLE  )
 	  idle_workers_count++;
-	if( (*i)->getState() == "COMPUTING"  )
+	if( (*i)->getState() == COMPUTING  )
 	  computing_workers_count++;
       }
 

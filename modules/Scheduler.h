@@ -41,7 +41,7 @@ class Scheduler {
   int runScheduler(); 
     
   // a Worker node will notify the Scheduler when a job finishes its execution
-  int notifyJobCompletion(int job_id);
+  int notifyJobCompletion(unsigned int job_id);
 
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();

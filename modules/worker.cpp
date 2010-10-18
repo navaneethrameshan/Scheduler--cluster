@@ -89,6 +89,12 @@ long Worker::getInstructionsPerTime() {
   return properties.instructions_per_time;
 }
 
+unsigned int Worker::getWorkerID()
+{
+  return id;
+
+}
+
 /* Private methods */
 void Worker::initialise() {
   if ((currentTime-state.start) < properties.time_to_startup) {
