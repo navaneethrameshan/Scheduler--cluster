@@ -2,12 +2,13 @@
 class Task{
 	
 	int task_id;
-	int no_jobs;
-	job *jobs_list;
-	
+	int job_rate;
 	public:
+	
+	int no_jobs;
+        Job *jobs_list;
        
-       void init (int id, int jobs, job *jobslist);
+       void init (int id, int jobs, Job *jobslist, int rate);
 	
 	void show();
 		
