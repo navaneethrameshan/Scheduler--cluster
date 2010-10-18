@@ -2,24 +2,31 @@
 #define __SIMULATOR__
 
 #include "worker.h"
+#include "scheduler.h"
+/*copied from Navaneeths main*/
+#include<stdio.h>
+#include<cstdlib>
+#include"tg.h"
+#include"file.h"
 
 #define DEBUG true
 
 extern long currentTime;
 
 class Simulator {
-  //Scheduler scheduler;
-  //TaskGen *taskgenerator; 
-  std::list<Worker *> workers;
-  bool stopping;
 
+  list<Task > tasklist;
+  list<Worker *> workers;
+ bool stopping;
+ 
  private:
   bool cleanUp();
   void debug(const char* msg);
+  int start_pos;
+  
 
  public:
   Simulator();
-  void init();
   void execute();
   void stop();
 

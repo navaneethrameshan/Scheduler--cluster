@@ -12,3 +12,10 @@ void Job:: init(int taskid, int jobid, int inst, int mem){
 void Job:: show(){
   cout<< "\nJob ID: "<< job_id<<" Job Inst: "<<no_inst<<" Job Mem: "<<mem_size<< "\n";
 }
+
+
+//added by Wasif
+unsigned int Job::getJobID()
+{
+  return job_id;
+}

@@ -1,5 +1,11 @@
 #include"tg.h"
 
+
+Taskgen::Taskgen(Scheduler *sched)
+{
+scheduler = sched;
+
+}
 list<Task > Taskgen::create_task(Task * given_task, Job *job){
 	 srand(time(NULL));
 	  for(int i=0;i<NO_JOBS;i++){
@@ -35,8 +41,10 @@ list<Task > Taskgen::create_task(Task * given_task, Job *job){
         for(i=list2.begin(); i != list2.end(); ++i){
        		templist.push_back(*(*i));
        }
-       list2.clear();
- // FIXME Send info to Scheduler
+	scheduler->submitJobs(templist);
+	list2.clear();
+	templist.clear();
+
  }
  
  void Taskgen:: showtask(){

@@ -3,7 +3,7 @@
 #include <cstdlib>
 #include <list>
 #include "Scheduler.h"
-#include "worker.h"
+
 using namespace std;
  
   // default constructor
@@ -13,11 +13,11 @@ Scheduler::Scheduler()
 }
 
 // constructor
-Scheduler::Scheduler(string scheduler_mode, unsigned int scheduling_interval, list<Worker *> workers)
+Scheduler::Scheduler(string scheduler_mode, unsigned int scheduling_interval)
 {
   this->scheduler_mode = scheduler_mode;
   this->scheduling_interval = scheduling_interval;
-  this->workers = workers;
+  queuedJobs.clear ();
 }
   
   //this function will start a worker and return its worker_id
@@ -52,12 +52,13 @@ unsigned int Scheduler::startWorkerNode()
   
   
   // TaskGenerator will submit jobs to the scheduler using this function
-  int Scheduler::submitJobs(list<Job *> jobs)
+  int Scheduler::submitJobs(list<Job > jobs)
   {
-	list<Job *>::iterator i;
+	list<Job >::iterator i;
 	for(i=jobs.begin(); i!=jobs.end();++i)
 	  {
-	queuedJobs.push_back(*i);
+	  cout<< "\nSCHED:: PUSHED JOB TO QUEUED JOBS"<<queuedJobs.size()<<"\n";
+	queuedJobs.push_back(*i);	
 	  }
 	return 0;
       
@@ -69,7 +70,7 @@ unsigned int Scheduler::startWorkerNode()
     	list<Worker *>::iterator i;
 	for(i=workers.begin(); i!=workers.end();++i)
 	  {
-	workers.push_back(*i);
+	this->workers.push_back(*i);
 	  }
 	return 0;
   }
@@ -93,6 +94,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
   //Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
   int Scheduler::runScheduler()
   { 
+    	
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
       {
 	//Nothing to do, so chilling!
@@ -103,11 +105,19 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
       {
 	if( (int)queuedJobs.size() > 0) 
 	  {
+			//To test Navaneeth
+list<Job >::iterator k;
+ for(k=queuedJobs.begin();k!=queuedJobs.end();++k)
+	      {
+		(*k).show();
+		}
+//To test end	   
+		
 	    //int number_of_queued_jobs = (int)this->queuedJobs.size();
 	    //int number_of_usable_worker_nodes = getNumberOfUsableNodes(this->workers); //Commented out - not required
 	    
 	    //start nodes for each job in queue
-	    list<Job *>::iterator i;
+	    list<Job >::iterator i;
 	    //if(number_of_queued_jobs <= number_of_usable_worker_nodes ) //Commented out because condition is not required
 	      for(i=queuedJobs.begin();i!=queuedJobs.end();++i)
 	      {
@@ -115,17 +125,18 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 		for(j=workers.begin();j!=workers.end();++j)
 		  {
 		    /* if( (*j)->getState() == worker_states.COMPUTING || (*j)->getState() == worker_states.IDLE || (*j)->getState() == worker_states.OFFLINE )*/
+		    	cout<< "\n STATE OF WORKER "<< (*j)->getState() <<"\n";
  if( (*j)->getState() == COMPUTING || (*j)->getState() == IDLE || (*j)->getState() == OFFLINE )
 		      {
-
 			list<Job> jobs_to_submit;
-			jobs_to_submit.push_back(*(*i));
+			jobs_to_submit.push_back(*i);	
 			//(*j)->startWorker(); //starting a worker node
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
+			    cout<<"Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
-			    cout<<"Job "<<(*i)->getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
+			    --i; //Added during Testing (Navaneeth and Marcus)
 			    break; //breaking the workers loop in any case and moving on with next job
 			  }
 			else
@@ -135,7 +146,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
 		      }
 		  }
-	      }
+		}
 
 	  }
       }
@@ -148,13 +159,14 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
   int Scheduler::notifyJobCompletion(unsigned int job_id)
   {
     //find the job_id in the runningJobs List
-    list<Job *>::iterator i;
+    list<Job >::iterator i;
     for(i=runningJobs.begin();i!=runningJobs.end();++i)
       {
-	if( (*i)->getJobID() == job_id )
+	if( (*i).getJobID() == job_id )
 	  {
 	    completedJobs.push_back(*i); //marking the job as complete
 	    runningJobs.erase(i); //erasing the job from runningJobs 
+	    --i; //Added during testing (Navaneeth and Marcus)	
 	  }
       }
     return 0; //returning 0 always (for the time being)

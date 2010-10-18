@@ -2,11 +2,13 @@
 #define __WORKER__
 
 #include "job.h"
+#include "Scheduler.h"
 
 #ifndef DEBUG
 #define DEBUG true
 #endif
 
+class Scheduler;
 extern long currentTime;
 
 enum worker_states { INITIALISING, COMPUTING, FINALISING, IDLE, OFFLINE };
@@ -32,33 +34,40 @@ class Worker {
 
  private:
   unsigned int id;
+Scheduler *scheduler;
   WORKER_STATE state;
   WORKER_PROPERTIES properties;
   Job *current_job;
+  Job tmp_current_job;
   std::list<Job> jobs;
 
   void initialise();
   void compute();
   void finalise();
-  bool setState(enum worker_states newstate);
+  void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
   void debug(const char *msg);
+  void setDefaultProperties();
+  void removeJob();
+  bool startJob();
+  bool hasMoreWork();
 
  public:
-  Worker(int id);
+  Worker(int id, Scheduler *sched);
   void execute();
   bool startWorker();
   bool stopWorker();
   bool submitJobs(std::list<Job> newjobs);
   enum worker_states getState();
   int getAvailableMemory();
-  bool getAcceptingJobs();
+  bool isAcceptingJobs();
   int getTotalMemory();
   float getCostPerHour();
   long getTimeToStart();
   long getSwappingTime();
   long getInstructionsPerTime();
+  bool ping();
 
 //added by wasif
 unsigned int getWorkerID();

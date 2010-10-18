@@ -4,37 +4,58 @@
 #include "simulator.h"
 
 using namespace std;
+long currentTime =0;
 
-Simulator::Simulator() {
+ Simulator::Simulator() {
   stopping = false;
+  start_pos=0;
+
 }
 
-void Simulator::init() {
-  // set scheduler
+
+void Simulator::execute() {
+Job job1[NO_JOBS];
+Task task1;
+Scheduler *scheduler;
+scheduler = new Scheduler("WEB_REQUEST", 1);
+
   // set task generator
-  // initialise worker list
-  cout << "\n";
-  debug("Starting simulator");
-
+ Taskgen T = Taskgen(scheduler); 
   // this will be read from file
-  Worker *w1 = new Worker(1);
+  Worker *w1 = new Worker(1,scheduler);
+  w1->startWorker();
   workers.push_front(w1);
-  
-
-  Worker *w2 = new Worker(2);
+  Worker *w2 = new Worker(2,scheduler);
   if (w2->startWorker()) 
     cout << "Started worker 2" << endl;
   workers.push_front(w2);
-  
-}
+ tasklist=T.create_task(&task1, job1); 
+  list<Task >::iterator i;
+  i=tasklist.begin();
 
-void Simulator::execute() {
+  bool tg_stop = false;
+  scheduler->submitWorkers(workers);
   while (true) {
     if (stopping || currentTime == 50)
       break;
+    
+    /*Copied from Nav's clock function*/    
+    
+    //    counter ++;
+    if(tg_stop == false) {
+    cout<<" Time ["<<currentTime<<"] ";
+    start_pos=T.add_job_list(&(*i), RATE, start_pos);
+    T.send_task();
+    if (start_pos == 0)
+      ++i;
+    if(i==tasklist.end())
+      tg_stop = true;
+    }
+    /* Nav clock code ends here  */
 
     debug("Executing");
 
+     
     // execute tg + scheduler
 
     // iterate all workers
@@ -42,7 +63,8 @@ void Simulator::execute() {
     for (worker = workers.begin(); worker != workers.end(); ++worker) {
       (*worker)->execute();
     }
-
+    
+    scheduler->runScheduler();
     currentTime++;
   }
 
@@ -60,5 +82,5 @@ bool Simulator::cleanUp() {
 
 void Simulator::debug(const char* msg) {
   if (DEBUG)
-    cout << "[" << currentTime << "] " << msg << "\n";
+    cout << "[Simulator][" << currentTime << "] " << msg << "\n";
 }

@@ -1,18 +1,24 @@
+#ifndef __SCHEDULER__
+#define __SCHEDULER__
+
+
 #include <iostream>
 #include <string>
 #include <cstdlib>
 #include <list>
-#include "worker.h"
 using namespace std;
+
+#include "worker.h"
+class Worker;
 class Scheduler {
 
  private:
   string scheduler_mode; //"SINGLE_TASK" or "WEB"
   unsigned int scheduling_interval; //time between executions of the scheduling algorithm
   list<Worker *> workers;    //Contains information of all worker nodes
-  list<Job *> queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
-  list<Job *> completedJobs; //Contains jobs which have been completed
-  list<Job *> runningJobs;   //Contains jobs which are currently in running state
+  list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
+  list<Job > completedJobs; //Contains jobs which have been completed
+  list<Job > runningJobs;   //Contains jobs which are currently in running state
   
 
   
@@ -23,7 +29,7 @@ class Scheduler {
   Scheduler();
   
   // constructor
-  Scheduler(string scheduler_mode, unsigned int scheduling_interval, list<Worker *> workers);
+  Scheduler(string scheduler_mode, unsigned int scheduling_interval);
 
   //this function will start a worker and return its worker_id
   unsigned int startWorkerNode();
@@ -32,7 +38,7 @@ class Scheduler {
   unsigned int stopWorkerNode(unsigned int worker_id);  
   
   // TaskGenerator will submit jobs to the scheduler using this function
-  int submitJobs(list<Job *> jobs);
+  int submitJobs(list<Job > jobs);
 
   // if required, the Simulator can submit new worker nodes to Scheduler 
   int submitWorkers(list<Worker *> workers);
@@ -46,3 +52,6 @@ class Scheduler {
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
 };
+
+
+#endif /* ____ */
