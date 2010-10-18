@@ -1,8 +1,13 @@
 #include"tg.h"
 
-list<Task > Taskgen::create_task(Task * given_task){
+list<Task > Taskgen::create_task(Task * given_task, Job *job){
+	 srand(time(NULL));
+	  for(int i=0;i<NO_JOBS;i++){
+         job[i].init(TASK_ID,(i+JOB_START_ID),INST, MEM);
+         }
+         given_task->init(TASK_ID,NO_JOBS,job,RATE);
          add_task_list(given_task);
-     // 	 showtask();
+	 showtask();
          return (list1); 
  }
  
@@ -25,7 +30,6 @@ list<Task > Taskgen::create_task(Task * given_task){
  }
  
  void Taskgen:: send_task(){
- 
 	list<Job > templist;
 	list<Job *>::iterator i;
         for(i=list2.begin(); i != list2.end(); ++i){
@@ -36,7 +40,6 @@ list<Task > Taskgen::create_task(Task * given_task){
  }
  
  void Taskgen:: showtask(){
- 	cout<<"SIZE "<<list1.size();
  	list<Task  >::iterator j;
        for(j=list1.begin(); j != list1.end(); ++j){
       		(*j).show();

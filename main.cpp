@@ -11,22 +11,15 @@ int start_pos=0;
 int main(){
  
  //Read File//
- 
-  srand(time(NULL));
  	  Job job1[NO_JOBS];
-         for(int i=0;i<NO_JOBS;i++){
-         job1[i].init(TASK_ID,(i+JOB_START_ID),INST, MEM);
-         }
          Task task1;
-         task1.init(TASK_ID,NO_JOBS,job1,RATE);
- 
  Taskgen T;
  list<Task > tasklist;
- tasklist=T.create_task(&task1); 
- list<Task  >::iterator j;
+  tasklist=T.create_task(&task1, job1); 
+/* list<Task  >::iterator j;
       for(j=tasklist.begin(); j != tasklist.end(); j++){
       		(*j).show();
-       }	
+       }	*/
   // Universal Clock
   list<Task >::iterator i;
   i=tasklist.begin();

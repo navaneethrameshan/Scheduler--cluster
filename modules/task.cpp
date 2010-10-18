@@ -10,7 +10,7 @@ void Task:: init(int id, int jobs, Job *jobslist, int rate ){
 		}
 		
  void Task:: show(){
-		cout<<"Task ID: "<<task_id<<" No. of Jobs: "<<no_jobs;
+		cout<<"Task ID: "<<task_id<<" No. of Jobs: "<<no_jobs<< " Rate: "<<job_rate;
 		Job *temp=jobs_list;
 		for(int i=0;i<no_jobs;i++){
 			temp->show();
