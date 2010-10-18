@@ -136,7 +136,7 @@ void Worker::compute() {
     debug("computing");      
   } else {
     removeJob();
-    // notify Scheduler
+    // delegate->notifyJobCompletion(current_job->job_id); // create class member
   }  
 }
 
