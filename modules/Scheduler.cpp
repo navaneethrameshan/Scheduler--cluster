@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <cstdlib>
 #include <list>
@@ -6,14 +7,58 @@
 
 using namespace std;
  
-  // default constructor
+  // default constructor - reads the configuration from modules/scheduler.conf
 Scheduler::Scheduler() 
 {
   //Scheduler(/*"SINGLE_TASK"*/0, 0, 0);
+  
+  string line;
+  ifstream infile;
+  string values[10];
+  int i=0;
+  infile.open ("modules/scheduler.conf");
+
+  while(!infile.eof()) // To get you all the lines.
+    {
+      getline(infile,line); // Saves the line in STRING.
+      if( (line.find('#') != 0) ) //this will ignore the lines having a '#' character 
+	{
+	  values[i] = line;
+	  cout<<values[i]<<endl;
+	  i++;
+	}
+    }
+  infile.close();
+
+  
+  scheduler_mode = values[0]; //W or S
+  scheduling_interval = strtod(values[1].c_str(), NULL); //0.01 to 1 seconds atoi(strNumber.c_str());
+  worker_node_speed = strtod(values[2].c_str(), NULL); //200 - 400 instructions per second
+  worker_node_memory = strtod(values[3].c_str(), NULL); //2-8 GB
+  worker_node_swapping_cost = strtod(values[4].c_str(), NULL); //2-10 instructions per GB
+  worker_quantum = strtod(values[5].c_str(), NULL); //0.01 to 0.5 seconds
+  worker_node_startup_time = strtod(values[6].c_str(), NULL); //120-600 seconds
+  worker_node_sched_notif_time = strtod(values[7].c_str(), NULL); //1-5 instructions
+  worker_node_cost = strtod(values[8].c_str(), NULL); //in euros/hour
+
+  cout<<"[Scheduler starting]"<<endl
+      <<"[Scheduler] scheduler_mode "<<scheduler_mode<<endl
+      <<"[Scheduler] scheduling_interval "<<scheduling_interval<<endl
+      <<"[Scheduler] worker_node_speed "<<worker_node_speed<<endl
+      <<"[Scheduler] worker_node_memory "<<worker_node_memory<<endl
+      <<"[Scheduler] worker_node_swapping_cost "<<worker_node_swapping_cost<<endl
+      <<"[Scheduler] worker_quantum "<<worker_quantum<<endl
+      <<"[Scheduler] worker_node_startup_time "<<worker_node_startup_time<<endl
+      <<"[Scheduler] worker_node_sched_notif_time "<<worker_node_sched_notif_time<<endl
+      <<"[Scheduler] worker_node_cost "<<worker_node_cost
+      <<endl;
+
+  queuedJobs.clear(); //why do we need this?
+ 
 }
 
 // constructor
-Scheduler::Scheduler(string scheduler_mode, unsigned int scheduling_interval)
+Scheduler::Scheduler(string scheduler_mode, float scheduling_interval)
 {
   this->scheduler_mode = scheduler_mode;
   this->scheduling_interval = scheduling_interval;

@@ -17,7 +17,7 @@ void Simulator::execute() {
 Job job1[NO_JOBS];
 Task task1;
 Scheduler *scheduler;
-scheduler = new Scheduler("WEB_REQUEST", 1);
+scheduler = new Scheduler();
 
   // set task generator
  Taskgen T = Taskgen(scheduler); 

@@ -13,8 +13,16 @@ class Worker;
 class Scheduler {
 
  private:
-  string scheduler_mode; //"SINGLE_TASK" or "WEB"
-  unsigned int scheduling_interval; //time between executions of the scheduling algorithm
+  string scheduler_mode;
+  float scheduling_interval;
+  float worker_node_speed;
+  float worker_node_memory;
+  float worker_node_swapping_cost;
+  float worker_quantum;
+  float worker_node_startup_time;
+  float worker_node_sched_notif_time;
+  float worker_node_cost;
+
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
   list<Job > completedJobs; //Contains jobs which have been completed
@@ -29,7 +37,7 @@ class Scheduler {
   Scheduler();
   
   // constructor
-  Scheduler(string scheduler_mode, unsigned int scheduling_interval);
+  Scheduler(string scheduler_mode, float scheduling_interval);
 
   //this function will start a worker and return its worker_id
   unsigned int startWorkerNode();

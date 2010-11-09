@@ -2,7 +2,7 @@
 #define __SIMULATOR__
 
 #include "worker.h"
-#include "scheduler.h"
+#include "Scheduler.h"
 /*copied from Navaneeths main*/
 #include<stdio.h>
 #include<cstdlib>
