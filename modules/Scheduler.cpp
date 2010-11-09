@@ -7,7 +7,7 @@
 
 using namespace std;
  
-  //! \brief default constructor - reads the configuration from modules/scheduler.conf
+  //! default constructor - reads the configuration from modules/scheduler.conf HAHA
 Scheduler::Scheduler() 
 {
  
@@ -56,7 +56,7 @@ Scheduler::Scheduler()
  
 }
 
-//! \brief  This constructor has been deprecated. Please use Scheduler()
+//! This constructor has been deprecated. Please use Scheduler()
 Scheduler::Scheduler(string scheduler_mode, float scheduling_interval)
 {
   this->scheduler_mode = scheduler_mode;
@@ -64,7 +64,7 @@ Scheduler::Scheduler(string scheduler_mode, float scheduling_interval)
   queuedJobs.clear ();
 }
   
-//! \brief this function will start a worker and return its worker_id
+//! This function will start a worker and return its worker_id
 unsigned int Scheduler::startWorkerNode()
 {
   list<Worker *>::iterator i;
@@ -79,7 +79,7 @@ unsigned int Scheduler::startWorkerNode()
   
 }
 
-//! \brief this function will stop a worker and returns 0 on successful execution
+//! This function will stop a worker and returns 0 on successful execution
   unsigned int Scheduler::stopWorkerNode(unsigned int worker_id)
   {
   list<Worker *>::iterator i;
@@ -94,7 +94,7 @@ unsigned int Scheduler::startWorkerNode()
   }  
   
   
-  //! \brief TaskGenerator will submit jobs to the scheduler using this function
+  //! TaskGenerator will submit jobs to the scheduler using this function
   int Scheduler::submitJobs(list<Job > jobs)
   {
 	list<Job >::iterator i;
@@ -107,7 +107,7 @@ unsigned int Scheduler::startWorkerNode()
       
   }
 
-  //! \brief if required, the Simulator can submit new worker nodes to Scheduler during the Simulation
+  //! If required, the Simulator can submit new worker nodes to Scheduler during the Simulation
   int Scheduler::submitWorkers(list<Worker *> workers)
   {
     	list<Worker *>::iterator i;
@@ -134,7 +134,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 }
 */
 
-  //! \brief Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
+  //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
   int Scheduler::runScheduler()
   { 
     	
@@ -198,7 +198,7 @@ list<Job >::iterator k;
   }
     
 
-  //! \brief  a Worker node will notify the Scheduler when a job finishes its execution
+  //! A Worker node will notify the Scheduler when a job finishes its execution
   int Scheduler::notifyJobCompletion(unsigned int job_id)
   {
     //find the job_id in the runningJobs List
@@ -216,7 +216,7 @@ list<Job >::iterator k;
 
   }
 
-  //! \brief  outputs the current state of a Scheduler object (can be static also; will be decided later on)
+  //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void Scheduler::print()
   {
     cout<<"Scheduler Mode: "<<scheduler_mode<<endl;

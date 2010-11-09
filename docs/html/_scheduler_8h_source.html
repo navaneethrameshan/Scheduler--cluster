@@ -71,8 +71,8 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00031"></a>00031   <span class="keywordtype">float</span> worker_node_sched_notif_time;
 <a name="l00032"></a>00032   <span class="keywordtype">float</span> worker_node_cost;
 <a name="l00033"></a>00033 
-<a name="l00034"></a>00034   list&lt;Worker *&gt; workers;    
-<a name="l00035"></a>00035   list&lt;Job &gt; queuedJobs;    
+<a name="l00034"></a>00034   list&lt;Worker *&gt; workers;    <span class="comment">//Contains information of all worker nodes</span>
+<a name="l00035"></a>00035   list&lt;Job &gt; queuedJobs;    <span class="comment">//Contains jobs which the Scheduler has received and have not started running</span>
 <a name="l00036"></a>00036   list&lt;Job &gt; completedJobs; <span class="comment">//Contains jobs which have been completed</span>
 <a name="l00037"></a>00037   list&lt;Job &gt; runningJobs;   <span class="comment">//Contains jobs which are currently in running state</span>
 <a name="l00038"></a>00038   
@@ -82,31 +82,31 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 <a name="l00042"></a>00042 
 <a name="l00043"></a>00043 
 <a name="l00044"></a>00044   <span class="comment">// default constructor</span>
-<a name="l00045"></a>00045   <a class="code" href="class_scheduler.html#a3b61aac11466cd45ae42ab8c2b0013f6" title="default constructor - reads the configuration from modules/scheduler.conf">Scheduler</a>();
+<a name="l00045"></a>00045   <a class="code" href="class_scheduler.html#a3b61aac11466cd45ae42ab8c2b0013f6" title="default constructor - reads the configuration from modules/scheduler.conf HAHA">Scheduler</a>();
 <a name="l00046"></a>00046   
 <a name="l00047"></a>00047   <span class="comment">// constructor</span>
-<a name="l00048"></a>00048   <a class="code" href="class_scheduler.html#a3b61aac11466cd45ae42ab8c2b0013f6" title="default constructor - reads the configuration from modules/scheduler.conf">Scheduler</a>(<span class="keywordtype">string</span> scheduler_mode, <span class="keywordtype">float</span> scheduling_interval);
+<a name="l00048"></a>00048   <a class="code" href="class_scheduler.html#a3b61aac11466cd45ae42ab8c2b0013f6" title="default constructor - reads the configuration from modules/scheduler.conf HAHA">Scheduler</a>(<span class="keywordtype">string</span> scheduler_mode, <span class="keywordtype">float</span> scheduling_interval);
 <a name="l00049"></a>00049 
 <a name="l00050"></a>00050   <span class="comment">//this function will start a worker and return its worker_id</span>
-<a name="l00051"></a>00051   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a23817f02d8d773693b6e5bfdd81dd278" title="this function will start a worker and return its worker_id">startWorkerNode</a>();
+<a name="l00051"></a>00051   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a23817f02d8d773693b6e5bfdd81dd278" title="This function will start a worker and return its worker_id.">startWorkerNode</a>();
 <a name="l00052"></a>00052   
 <a name="l00053"></a>00053   <span class="comment">//this function will stop a worker and returns 0 on successful execution</span>
-<a name="l00054"></a>00054   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a34bd05387325e9065ea0e321d265316d" title="this function will stop a worker and returns 0 on successful execution">stopWorkerNode</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> worker_id);  
+<a name="l00054"></a>00054   <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a34bd05387325e9065ea0e321d265316d" title="This function will stop a worker and returns 0 on successful execution.">stopWorkerNode</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> worker_id);  
 <a name="l00055"></a>00055   
 <a name="l00056"></a>00056   <span class="comment">// TaskGenerator will submit jobs to the scheduler using this function</span>
 <a name="l00057"></a>00057   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#acdb112850c10ba9752d315abd21c31c2" title="TaskGenerator will submit jobs to the scheduler using this function.">submitJobs</a>(list&lt;Job &gt; jobs);
 <a name="l00058"></a>00058 
 <a name="l00059"></a>00059   <span class="comment">// if required, the Simulator can submit new worker nodes to Scheduler </span>
-<a name="l00060"></a>00060   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a4f0c5f93591c073ff96f52b96aa12cf1" title="if required, the Simulator can submit new worker nodes to Scheduler during the Simulation...">submitWorkers</a>(list&lt;Worker *&gt; workers);
+<a name="l00060"></a>00060   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#a4f0c5f93591c073ff96f52b96aa12cf1" title="If required, the Simulator can submit new worker nodes to Scheduler during the Simulation...">submitWorkers</a>(list&lt;Worker *&gt; workers);
 <a name="l00061"></a>00061 
 <a name="l00062"></a>00062   <span class="comment">//Runs the scheduler - will be executed at each clock tick by Simulator</span>
 <a name="l00063"></a>00063   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#ac98fdd458345870fc08da9a0ca4e32a0" title="Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will...">runScheduler</a>(); 
 <a name="l00064"></a>00064     
 <a name="l00065"></a>00065   <span class="comment">// a Worker node will notify the Scheduler when a job finishes its execution</span>
-<a name="l00066"></a>00066   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#aca837017afb6627b776768d83b23640e" title="a Worker node will notify the Scheduler when a job finishes its execution">notifyJobCompletion</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> job_id);
+<a name="l00066"></a>00066   <span class="keywordtype">int</span> <a class="code" href="class_scheduler.html#aca837017afb6627b776768d83b23640e" title="A Worker node will notify the Scheduler when a job finishes its execution.">notifyJobCompletion</a>(<span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> job_id);
 <a name="l00067"></a>00067 
 <a name="l00068"></a>00068   <span class="comment">// outputs the current state of a Scheduler object (can be static also; will be decided later on)</span>
-<a name="l00069"></a>00069   <span class="keywordtype">void</span> <a class="code" href="class_scheduler.html#a82a4b6d19b5c505eac94dac67e4fc6c4" title="outputs the current state of a Scheduler object (can be static also; will be decided...">print</a>();
+<a name="l00069"></a>00069   <span class="keywordtype">void</span> <a class="code" href="class_scheduler.html#a82a4b6d19b5c505eac94dac67e4fc6c4" title="Outputs the current state of a Scheduler object (can be static also; will be decided...">print</a>();
 <a name="l00070"></a>00070 };
 <a name="l00071"></a>00071 
 <a name="l00072"></a>00072 
@@ -126,7 +126,7 @@ var searchBox = new SearchBox("searchBox", "search",false,'Search');
 </iframe>
 </div>
 
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Tue Nov 9 01:47:05 2010 for Cloud Computing Scheduler by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Tue Nov 9 01:59:06 2010 for Cloud Computing Scheduler by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>
