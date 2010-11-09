@@ -1,3 +1,11 @@
+//!@version 0.1
+//!@author Was/Nav/Marc
+//!@date November 9th, 2010
+//!@note Scheduler header file
+
+/*! \brief A chess piece
+ * The abstract parent of all chess pieces. */
+
 #ifndef __SCHEDULER__
 #define __SCHEDULER__
 
