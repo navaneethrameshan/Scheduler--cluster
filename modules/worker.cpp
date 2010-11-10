@@ -133,9 +133,12 @@ long Worker::getTotalCost() {
   return hours*getCostPerHour();
 }
 
+int Worker::getQueuedJobs() {
+  return (int)jobs.size();
+}
+
 /* Private methods */
 bool Worker::startJob() {
-	cout << "worker queue: " << jobs.size();
   if (current_job == NULL) {
     list<Job>::iterator i;
     i = jobs.begin();

@@ -9,6 +9,7 @@ long currentTime =0;
  Simulator::Simulator() {
   stopping = false;
   start_pos=0;
+  logger = Logger::getLogger();
 
 }
 
@@ -53,6 +54,10 @@ void Simulator::execute() {
     
     scheduler->runScheduler();
 
+    if ((currentTime % 1000) == 0) {
+      logRunningAverage();
+    }
+
     currentTime++;
   }
 
@@ -64,13 +69,12 @@ void Simulator::stop() {
 }
 
 bool Simulator::cleanUp() {
-  debug("Stopping.");
+  logRunningAverage();
   return true;
 }
 
 
 /* Private methods */
-
 void Simulator::runWorkers() {
   list<Worker *>::iterator worker;
 
@@ -89,6 +93,19 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   workers.push_front(w2);
 
   return true;
+}
+
+void Simulator::logRunningAverage() {
+  int no_workers = 0;
+  int queued_jobs = 0;
+  list<Worker *>::iterator worker;
+  for (worker = workers.begin(); worker != workers.end(); ++worker) {
+    if ((*worker)->ping()) {
+      no_workers++;
+      queued_jobs += (*worker)->getQueuedJobs();
+    }
+  }
+  logger->workerAverage(currentTime, no_workers, queued_jobs);
 }
 
 void Simulator::debug(const char* msg) {

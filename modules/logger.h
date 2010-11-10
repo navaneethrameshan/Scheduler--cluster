@@ -27,6 +27,7 @@ class Logger {
   // logging functions
   void debug(string debugString);
   void info(string infoString);
+  void workerAverage(long time, int workers, int jobs);
   /*
   void startWorker();
   void startJob();

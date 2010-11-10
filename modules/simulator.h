@@ -8,23 +8,27 @@
 #include<cstdlib>
 #include"tg.h"
 #include"file.h"
+#include "logger.h"
 
-#define DEBUG true
+#ifndef DEBUG
+#define DEBUG false
+#endif
 
 extern long currentTime;
 
-class Simulator {
-
+class Simulator {  
+ private:
+  Logger* logger;
   list<Task > tasklist;
   list<Worker *> workers;
   bool stopping;
- 
- private:
+
   bool cleanUp();
   void debug(const char* msg);
   int start_pos;
   bool readWorkers(Scheduler* scheduler);
   void runWorkers();
+  void logRunningAverage();
   
 
  public:

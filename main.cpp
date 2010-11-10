@@ -12,11 +12,12 @@ using namespace std;
 int main(){
 
   Logger* l = Logger::getLogger();
-  l->debug("Cloud simulator starts");
+  l->debug("Kickoff!");
   
   Simulator *sim = new Simulator();
   sim->execute();
 
+  l->debug("Game over.");
   l->finalize();
   return 0;
 }

@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
-
+#include <sstream>
+#include <string>
 #include "logger.h"
 
 using namespace std;
@@ -28,12 +29,19 @@ Logger* Logger::getLogger() {
 }
 
 void Logger::debug(string debugString) {
-  string entry = "[DEBUG] " + debugString;
-  write(entry);
+  stringstream entry;
+  entry << "[DEBUG] " << debugString;
+  write(entry.str());
 }
 
 void Logger::info(string infoString) {
   // do stuff
+}
+
+void Logger::workerAverage(long time, int workers, int jobs) {
+  stringstream entry;
+  entry << time << "\t" << workers << "\t" << jobs;
+  write(entry.str());
 }
 
 void Logger::finalize() {

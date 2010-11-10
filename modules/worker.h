@@ -5,7 +5,7 @@
 #include "Scheduler.h"
 
 #ifndef DEBUG
-#define DEBUG true
+#define DEBUG false
 #endif
 
 class Scheduler;
@@ -74,6 +74,7 @@ class Worker {
   long getTotalExecutionTime();
   long getTotalCPUTime();
   long getTotalCost();
+  int getQueuedJobs();
   bool ping();
 
 //added by wasif
