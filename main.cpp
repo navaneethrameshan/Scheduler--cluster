@@ -7,13 +7,16 @@
 using namespace std;
 */
 #include "modules/simulator.h"
-
+#include "modules/logger.h"
 
 int main(){
- 
-Simulator *sim = new Simulator();
-sim->execute();
 
+  Logger* l = Logger::getLogger();
+  l->debug("Cloud simulator starts");
+  
+  Simulator *sim = new Simulator();
+  sim->execute();
 
+  l->finalize();
   return 0;
 }
