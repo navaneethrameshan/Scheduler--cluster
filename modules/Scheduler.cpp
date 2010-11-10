@@ -216,6 +216,10 @@ list<Job >::iterator k;
 
   }
 
+bool Scheduler::areAllJobsCompleted() {
+  return ((queuedJobs.size() + runningJobs.size()) == 0);
+}
+
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void Scheduler::print()
   {

@@ -65,6 +65,9 @@ class Scheduler {
   // a Worker node will notify the Scheduler when a job finishes its execution
   int notifyJobCompletion(unsigned int job_id);
 
+  // checks if we can terminate the simulation
+  bool areAllJobsCompleted();
+
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
 };

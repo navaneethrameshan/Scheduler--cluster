@@ -33,7 +33,7 @@ void Simulator::execute() {
   bool task_generator_stop = false;
 
   while (true) {
-    if (stopping || currentTime == 50)
+    if (scheduler->areAllJobsCompleted() && task_generator_stop)
       break;
 
     // run task generator
