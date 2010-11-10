@@ -17,12 +17,14 @@ class Simulator {
 
   list<Task > tasklist;
   list<Worker *> workers;
- bool stopping;
+  bool stopping;
  
  private:
   bool cleanUp();
   void debug(const char* msg);
   int start_pos;
+  bool readWorkers(Scheduler* scheduler);
+  void runWorkers();
   
 
  public:

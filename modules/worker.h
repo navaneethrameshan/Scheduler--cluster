@@ -34,12 +34,14 @@ class Worker {
 
  private:
   unsigned int id;
-Scheduler *scheduler;
+  Scheduler *scheduler;
   WORKER_STATE state;
   WORKER_PROPERTIES properties;
   Job *current_job;
   Job tmp_current_job;
   std::list<Job> jobs;
+  long total_execution_time;
+  long total_cpu_time;
 
   void initialise();
   void compute();
@@ -52,6 +54,8 @@ Scheduler *scheduler;
   void removeJob();
   bool startJob();
   bool hasMoreWork();
+  void increaseExecutionTime();
+  void increaseCPUTime();
 
  public:
   Worker(int id, Scheduler *sched);
@@ -67,6 +71,9 @@ Scheduler *scheduler;
   long getTimeToStart();
   long getSwappingTime();
   long getInstructionsPerTime();
+  long getTotalExecutionTime();
+  long getTotalCPUTime();
+  long getTotalCost();
   bool ping();
 
 //added by wasif

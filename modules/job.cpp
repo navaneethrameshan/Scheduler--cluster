@@ -19,3 +19,8 @@ unsigned int Job::getJobID()
 {
   return job_id;
 }
+
+//added by archie
+int Job::getNumberOfInstructions() {
+  return no_inst;
+}

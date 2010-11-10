@@ -7,28 +7,38 @@ using namespace std;
 
 Worker::Worker(int worker_id, Scheduler *sched) {
   id = worker_id;
-scheduler = sched;
+  scheduler = sched;
   state.current = OFFLINE;
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
   setDefaultProperties();
   current_job = NULL;
+  total_execution_time = 0;
+  total_cpu_time = 0;
 }
 
 void Worker::execute() {
-	debug("tick");
+  debug("tick");
+
   switch (state.current) {
   case INITIALISING: 
+    increaseExecutionTime();
+    increaseCPUTime();
     initialise();
     break;
   case COMPUTING:
+    increaseExecutionTime();
+    increaseCPUTime();
     compute();
     break;
   case FINALISING:
+    increaseExecutionTime();
+    increaseCPUTime();
     finalise();
     break;
   case IDLE:
+    increaseCPUTime();
     idle();
     break;
   case OFFLINE:
@@ -105,6 +115,24 @@ bool Worker::ping() {
           state.current == INITIALISING);
 }
 
+long Worker::getTotalExecutionTime() {
+  return total_execution_time/getInstructionsPerTime();
+}
+
+long Worker::getTotalCPUTime() {
+  return total_cpu_time/getInstructionsPerTime();
+}
+
+long Worker::getTotalCost() {
+  // assuming time is seconds
+  long hours = getTotalCPUTime() / 60;
+  // rounding up
+  if ((hours % 60) > 0) 
+    hours++;
+
+  return hours*getCostPerHour();
+}
+
 /* Private methods */
 bool Worker::startJob() {
 	cout << "worker queue: " << jobs.size();
@@ -174,7 +202,15 @@ bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
 }
 
 long Worker::getTotalComputationTime() {
-  return 20;
+  return (int)current_job->getNumberOfInstructions(); // todo: instructions/time
+}
+
+void Worker::increaseExecutionTime() {
+  total_execution_time++;
+}
+
+void Worker::increaseCPUTime() {
+  total_cpu_time++;
 }
 
 void Worker::debug(const char *msg) {

@@ -14,57 +14,45 @@ long currentTime =0;
 
 
 void Simulator::execute() {
-Job job1[NO_JOBS];
-Task task1;
-Scheduler *scheduler;
-scheduler = new Scheduler();
-
+  Job job1[NO_JOBS];
+  Task task1;
+  Scheduler *scheduler;
+  scheduler = new Scheduler();
+  
   // set task generator
- Taskgen T = Taskgen(scheduler); 
-  // this will be read from file
-  Worker *w1 = new Worker(1,scheduler);
-  w1->startWorker();
-  workers.push_front(w1);
-  Worker *w2 = new Worker(2,scheduler);
-  if (w2->startWorker()) 
-    cout << "Started worker 2" << endl;
-  workers.push_front(w2);
- tasklist=T.create_task(&task1, job1); 
-  list<Task >::iterator i;
-  i=tasklist.begin();
-
-  bool tg_stop = false;
+  Taskgen task_generator = Taskgen(scheduler); 
+  
+  // read list of workers
+  readWorkers(scheduler);
   scheduler->submitWorkers(workers);
+
+  tasklist = task_generator.create_task(&task1, job1); 
+  list<Task >::iterator current_task;
+  current_task=tasklist.begin();
+  
+  bool task_generator_stop = false;
+
   while (true) {
     if (stopping || currentTime == 50)
       break;
-    
-    /*Copied from Nav's clock function*/    
-    
-    //    counter ++;
-    if(tg_stop == false) {
-    cout<<" Time ["<<currentTime<<"] ";
-    start_pos=T.add_job_list(&(*i), RATE, start_pos);
-    T.send_task();
-    if (start_pos == 0)
-      ++i;
-    if(i==tasklist.end())
-      tg_stop = true;
+
+    // run task generator
+    if(task_generator_stop == false) {
+      start_pos = task_generator.add_job_list(&(*current_task), RATE, start_pos);
+      task_generator.send_task();
+
+      if (start_pos == 0)
+        ++current_task;
+
+      if(current_task==tasklist.end())
+        task_generator_stop = true;
     }
-    /* Nav clock code ends here  */
 
-    debug("Executing");
 
-     
-    // execute tg + scheduler
-
-    // iterate all workers
-    list<Worker *>::iterator worker;
-    for (worker = workers.begin(); worker != workers.end(); ++worker) {
-      (*worker)->execute();
-    }
+    runWorkers();
     
     scheduler->runScheduler();
+
     currentTime++;
   }
 
@@ -77,6 +65,29 @@ void Simulator::stop() {
 
 bool Simulator::cleanUp() {
   debug("Stopping.");
+  return true;
+}
+
+
+/* Private methods */
+
+void Simulator::runWorkers() {
+  list<Worker *>::iterator worker;
+
+  for (worker = workers.begin(); worker != workers.end(); ++worker)
+    (*worker)->execute();
+}
+
+bool Simulator::readWorkers(Scheduler *scheduler) {
+  // todo: should be read from file
+  Worker *w1 = new Worker(1,scheduler);
+  w1->startWorker();
+  workers.push_front(w1);
+
+  Worker *w2 = new Worker(2,scheduler);
+  w2->startWorker();
+  workers.push_front(w2);
+
   return true;
 }
 
