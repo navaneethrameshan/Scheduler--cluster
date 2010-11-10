@@ -1,0 +1,20 @@
+Project: 
+      Cloud Computing
+      Load-balancer/Scheduler
+      
+To run: 
+      Type 'make'
+      Run with example config './cc example.tasks'
+      A log file called 'cloud.log' will be stored in the same directory
+
+To generate graphs:
+      After a run, type 'make graphs'
+      Inside the 'graphs/' folder, the files of interest are *.png
+
+Cleanup:
+      Type 'make clean'
+
+Authors: 
+      Navaneeth Rameshan
+      Marcus Ljungblad
+      Wasif Malik
