@@ -40,7 +40,7 @@ void Logger::info(string infoString) {
 
 void Logger::workerAverage(long time, int workers, int jobs) {
   stringstream entry;
-  entry << time << "\t" << workers << "\t" << jobs;
+  entry << "-" << time << "\t" << workers << "\t" << jobs;
   write(entry.str());
 }
 
