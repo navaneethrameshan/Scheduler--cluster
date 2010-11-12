@@ -23,7 +23,7 @@ Scheduler::Scheduler()
       if( (line.find('#') != 0) ) //this will ignore the lines having a '#' character 
 	{
 	  values[i] = line;
-	  cout<<values[i]<<endl;
+	//  cout<<values[i]<<endl;
 	  i++;
 	}
     }
@@ -100,7 +100,7 @@ unsigned int Scheduler::startWorkerNode()
 	list<Job >::iterator i;
 	for(i=jobs.begin(); i!=jobs.end();++i)
 	  {
-	  cout<< "\nSCHED:: PUSHED JOB TO QUEUED JOBS"<<queuedJobs.size()<<"\n";
+//	  cout<< "\nSCHED:: PUSHED JOB TO QUEUED JOBS"<<queuedJobs.size()<<"\n";
 	queuedJobs.push_back(*i);	
 	  }
 	return 0;
@@ -152,7 +152,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 list<Job >::iterator k;
  for(k=queuedJobs.begin();k!=queuedJobs.end();++k)
 	      {
-		(*k).show();
+	//	(*k).show();
 		}
 //To test end	   
 		
@@ -168,7 +168,7 @@ list<Job >::iterator k;
 		for(j=workers.begin();j!=workers.end();++j)
 		  {
 		    /* if( (*j)->getState() == worker_states.COMPUTING || (*j)->getState() == worker_states.IDLE || (*j)->getState() == worker_states.OFFLINE )*/
-		    	cout<< "\n STATE OF WORKER "<< (*j)->getState() <<"\n";
+		    //	cout<< "\n STATE OF WORKER "<< (*j)->getState() <<"\n";
  if( (*j)->getState() == COMPUTING || (*j)->getState() == IDLE || (*j)->getState() == OFFLINE )
 		      {
 			list<Job> jobs_to_submit;
@@ -177,7 +177,7 @@ list<Job >::iterator k;
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-			    cout<<"Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
+		//	    cout<<"Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
 			    --i; //Added during Testing (Navaneeth and Marcus)
 			    break; //breaking the workers loop in any case and moving on with next job

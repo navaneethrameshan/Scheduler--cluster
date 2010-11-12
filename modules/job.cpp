@@ -10,7 +10,7 @@ void Job:: init(int taskid, int jobid, int inst, int mem){
 }
 
 void Job:: show(){
-  cout<< "\nJob ID: "<< job_id<<" Job Inst: "<<no_inst<<" Job Mem: "<<mem_size<< "\n";
+  cout<< "\nTask ID: "<<task_id<< " Job ID: "<< job_id<<" Job Inst: "<<no_inst<<" Job Mem: "<<mem_size<< "\n";
 }
 
 

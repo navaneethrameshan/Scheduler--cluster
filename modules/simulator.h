@@ -7,7 +7,6 @@
 #include<stdio.h>
 #include<cstdlib>
 #include"tg.h"
-#include"file.h"
 #include "logger.h"
 
 #ifndef DEBUG

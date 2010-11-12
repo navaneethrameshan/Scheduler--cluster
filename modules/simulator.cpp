@@ -15,10 +15,22 @@ long currentTime =0;
 
 
 void Simulator::execute() {
-  Job job1[NO_JOBS];
-  Task task1;
+  Job job1[100] [100];
+  Task task1[100];
   Scheduler *scheduler;
   scheduler = new Scheduler();
+//modified Nov-8
+  int total_input =0;
+  string strings;
+fstream file("modules/input.conf");
+getline(file, strings);
+while (file){
+	total_input ++;
+	getline(file, strings);
+}
+//cout<< "\nTotal Input: "<<total_input<< " String: "<< strings<< "\n";
+file.close();
+//modified Nov-8
   
   // set task generator
   Taskgen task_generator = Taskgen(scheduler); 
@@ -27,7 +39,8 @@ void Simulator::execute() {
   readWorkers(scheduler);
   scheduler->submitWorkers(workers);
 
-  tasklist = task_generator.create_task(&task1, job1); 
+  tasklist = task_generator.create_task(task1, job1, total_input); 
+  
   list<Task >::iterator current_task;
   current_task=tasklist.begin();
   
@@ -39,7 +52,7 @@ void Simulator::execute() {
 
     // run task generator
     if(task_generator_stop == false) {
-      start_pos = task_generator.add_job_list(&(*current_task), RATE, start_pos);
+      start_pos = task_generator.add_job_list(&(*current_task), current_task->job_rate, start_pos);
       task_generator.send_task();
 
       if (start_pos == 0)
