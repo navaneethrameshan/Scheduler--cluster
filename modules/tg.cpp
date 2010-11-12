@@ -5,6 +5,7 @@ using namespace std;
 
 Taskgen::Taskgen(Scheduler *sched)
 {
+logger = Logger::getLogger();
 scheduler = sched;
 
 }
@@ -49,7 +50,6 @@ list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_in
  			break;
  		}
  	}
- 	cout<< "\n TG SENDS JOB:: ";
  	showjob();
  	return start_pos;
  }
@@ -77,6 +77,6 @@ list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_in
  void Taskgen:: showjob(){
  	list<Job * >::iterator j;
        for(j=list2.begin(); j != list2.end(); ++j){
-      		(*j)->show();
+      		logger->debug("Sending job: " + (*j)->show());
        }	
  }

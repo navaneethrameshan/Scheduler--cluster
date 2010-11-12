@@ -37,6 +37,7 @@ file.close();
   
   // read list of workers
   readWorkers(scheduler);
+
   scheduler->submitWorkers(workers);
 
   tasklist = task_generator.create_task(task1, job1, total_input); 
@@ -63,10 +64,10 @@ file.close();
     }
 
 
-    runWorkers();
+    runWorkers(); //moved up
     
     scheduler->runScheduler();
-
+    
     if ((currentTime % 1000) == 0) {
       logRunningAverage();
     }
@@ -99,11 +100,21 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   // todo: should be read from file
   Worker *w1 = new Worker(1,scheduler);
   w1->startWorker();
-  workers.push_front(w1);
+  workers.push_back(w1);
 
   Worker *w2 = new Worker(2,scheduler);
   w2->startWorker();
-  workers.push_front(w2);
+  workers.push_back(w2);
+
+  Worker *w3 = new Worker(3,scheduler);
+  w3->startWorker();
+  workers.push_back(w3);
+  /*
+  Worker *w4 = new Worker(4,scheduler);
+  w4->startWorker();
+  workers.push_back(w4);
+  */
+
 
   return true;
 }

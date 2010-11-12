@@ -6,11 +6,16 @@
 #include "Scheduler.h"
 
 using namespace std;
- 
-  //! default constructor - reads the configuration from modules/scheduler.conf HAHA
+
+int clocktick; 
+list<Worker *>::iterator j;
+bool isFirstTime;
+
+  //! default constructor - reads the configuration from modules/scheduler.conf
 Scheduler::Scheduler() 
 {
- 
+  isFirstTime = true;
+  clocktick = 0;
   string line;
   ifstream infile;
   string values[10];
@@ -23,7 +28,6 @@ Scheduler::Scheduler()
       if( (line.find('#') != 0) ) //this will ignore the lines having a '#' character 
 	{
 	  values[i] = line;
-	//  cout<<values[i]<<endl;
 	  i++;
 	}
     }
@@ -40,7 +44,7 @@ Scheduler::Scheduler()
   worker_node_sched_notif_time = strtod(values[7].c_str(), NULL); //1-5 instructions
   worker_node_cost = strtod(values[8].c_str(), NULL); //in euros/hour
 
-  cout<<"[Scheduler starting]"<<endl
+  cout<<"[Scheduler] Starting with following configuration"<<endl
       <<"[Scheduler] scheduler_mode "<<scheduler_mode<<endl
       <<"[Scheduler] scheduling_interval "<<scheduling_interval<<endl
       <<"[Scheduler] worker_node_speed "<<worker_node_speed<<endl
@@ -100,8 +104,7 @@ unsigned int Scheduler::startWorkerNode()
 	list<Job >::iterator i;
 	for(i=jobs.begin(); i!=jobs.end();++i)
 	  {
-//	  cout<< "\nSCHED:: PUSHED JOB TO QUEUED JOBS"<<queuedJobs.size()<<"\n";
-	queuedJobs.push_back(*i);	
+	    queuedJobs.push_back(*i);	
 	  }
 	return 0;
       
@@ -136,8 +139,19 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
   //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
   int Scheduler::runScheduler()
-  { 
-    	
+{ 
+
+   clocktick++;
+   /* if ((clocktick)%100 == 0) {
+    cout<<"[Scheduler] clock tick "<<clocktick<<endl;
+    }*/
+
+  if(isFirstTime == true ) {
+  j = workers.begin();
+  isFirstTime = false;
+  }
+  
+
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
       {
 	//Nothing to do, so chilling!
@@ -148,48 +162,43 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
       {
 	if( (int)queuedJobs.size() > 0) 
 	  {
-			//To test Navaneeth
-list<Job >::iterator k;
- for(k=queuedJobs.begin();k!=queuedJobs.end();++k)
-	      {
-	//	(*k).show();
-		}
-//To test end	   
-		
-	    //int number_of_queued_jobs = (int)this->queuedJobs.size();
-	    //int number_of_usable_worker_nodes = getNumberOfUsableNodes(this->workers); //Commented out - not required
-	    
 	    //start nodes for each job in queue
 	    list<Job >::iterator i;
-	    //if(number_of_queued_jobs <= number_of_usable_worker_nodes ) //Commented out because condition is not required
-	      for(i=queuedJobs.begin();i!=queuedJobs.end();++i)
+	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
 	      {
-		list<Worker *>::iterator j;
-		for(j=workers.begin();j!=workers.end();++j)
-		  {
-		    /* if( (*j)->getState() == worker_states.COMPUTING || (*j)->getState() == worker_states.IDLE || (*j)->getState() == worker_states.OFFLINE )*/
-		    //	cout<< "\n STATE OF WORKER "<< (*j)->getState() <<"\n";
- if( (*j)->getState() == COMPUTING || (*j)->getState() == IDLE || (*j)->getState() == OFFLINE )
+
+		    if( 
+		       (*j)->getState() == COMPUTING 
+		       || (*j)->getState() == IDLE 
+		       || (*j)->getState() == OFFLINE 
+		       || (*j)->getState() == INITIALISING
+		       || (*j)->getState() == FINALISING
+			)
 		      {
 			list<Job> jobs_to_submit;
 			jobs_to_submit.push_back(*i);	
-			//(*j)->startWorker(); //starting a worker node
+
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-		//	    cout<<"Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl; //Outputting
+			    cout<<"[Scheduler] Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl;//<<" at clock tick "<<clocktick<<endl; //Outputting
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
-			    --i; //Added during Testing (Navaneeth and Marcus)
-			    break; //breaking the workers loop in any case and moving on with next job
+			    i--; 
+			    j++;
+			    if(j == workers.end()) 
+			      {
+				j = workers.begin();
+			      }
+			   
 			  }
-			else
+			/*	else
 			  {
 			    continue;
-			  }
-
+			    }*/
+			
 		      }
-		  }
-		}
+
+	      }
 
 	  }
       }

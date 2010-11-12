@@ -7,13 +7,15 @@
 #include <list>
 #include<cstdlib>
 #include "Scheduler.h"
+#include "logger.h"
 using namespace std;
 
 class Taskgen{
-	
+	Logger * logger;
 	list<Task > list1;
 	list<Job *> list2;	
 	Scheduler *scheduler;
+	
 
 	public:
 	Taskgen(Scheduler *sched);
