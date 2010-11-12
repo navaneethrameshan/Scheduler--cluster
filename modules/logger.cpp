@@ -18,6 +18,8 @@ Logger::Logger() {
 
 void Logger::write(string entry) {
   logFile << entry << endl;
+  if (DEBUG)
+    cout << entry << endl;
 }
 
 /* public methods */
@@ -50,6 +52,14 @@ void Logger::info(string infoString) {
 void Logger::workerAverage(long time, int workers, int jobs) {
   stringstream entry;
   entry << "-" << time << "\t" << workers << "\t" << jobs;
+  write(entry.str());
+}
+
+void Logger::totals(long exec, long cpu, long cost) {
+  stringstream entry;
+  entry << "[TOTALS] CPU: " << cpu
+        << " EXECUTION: " << exec
+        << " COST: " << cost;
   write(entry.str());
 }
 

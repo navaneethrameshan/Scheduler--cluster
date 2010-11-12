@@ -84,6 +84,7 @@ void Simulator::stop() {
 
 bool Simulator::cleanUp() {
   logRunningAverage();
+  logTotals();
   return true;
 }
 
@@ -128,8 +129,23 @@ void Simulator::logRunningAverage() {
       no_workers++;
       queued_jobs += (*worker)->getQueuedJobs();
     }
-  }
+  } 
   logger->workerAverage(currentTime, no_workers, queued_jobs);
+}
+
+void Simulator::logTotals() {
+  long totalExecutionTime = 0;
+  long totalCPUTime = 0;
+  long totalCost = 0;
+  list<Worker *>::iterator worker;
+  for (worker = workers.begin(); worker != workers.end(); ++worker) {
+    totalExecutionTime += (*worker)->getTotalExecutionTime();
+    totalCPUTime += (*worker)->getTotalCPUTime();
+    totalCost += (*worker)->getTotalCost();
+  }
+  logger->totals(totalExecutionTime,
+                 totalCPUTime,
+                 totalCost);
 }
 
 void Simulator::debug(const char* msg) {

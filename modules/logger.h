@@ -8,6 +8,7 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
+
 class Logger {
  private:
   ofstream logFile;
@@ -29,13 +30,7 @@ class Logger {
   void debugInt(string debugString, int value);
   void info(string infoString);
   void workerAverage(long time, int workers, int jobs);
-  /*
-  void startWorker();
-  void startJob();
-  void swapJob();
-  void jobComplete();
-  void recordWorkerLoad(); 
-  */
+  void totals(long exec, long cpu, long cost);
   
 };
 

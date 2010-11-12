@@ -9,10 +9,6 @@
 #include"tg.h"
 #include "logger.h"
 
-#ifndef DEBUG
-#define DEBUG false
-#endif
-
 extern unsigned long currentTime;
 
 class Simulator {  
@@ -28,6 +24,7 @@ class Simulator {
   bool readWorkers(Scheduler* scheduler);
   void runWorkers();
   void logRunningAverage();
+  void logTotals();
   
 
  public:

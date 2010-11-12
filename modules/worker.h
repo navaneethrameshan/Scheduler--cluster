@@ -5,10 +5,6 @@
 #include "Scheduler.h"
 #include "logger.h"
 
-#ifndef DEBUG
-#define DEBUG false
-#endif
-
 class Scheduler;
 extern unsigned long currentTime;
 
@@ -51,7 +47,6 @@ class Worker {
   void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
-  void debug(const char *msg);
   void setDefaultProperties();
   void removeJob();
   bool startJob();

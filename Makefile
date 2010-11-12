@@ -21,7 +21,6 @@ docs:
 	doxygen $(DOCSCONFIG)
 
 graphs:
-	./$(EXECUTABLE)
 	mkdir -p graphs/
 	python graphgenerator.py cloud.log
 	gnuplot *.plot

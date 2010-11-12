@@ -224,7 +224,7 @@ bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
 }
 
 long Worker::getTotalComputationTime() {
-  return (int)current_job->getNumberOfInstructions(); // todo: instructions/time
+  return (int)current_job->getNumberOfInstructions(); 
 }
 
 void Worker::increaseExecutionTime() {
@@ -233,12 +233,6 @@ void Worker::increaseExecutionTime() {
 
 void Worker::increaseCPUTime() {
   total_cpu_time++;
-}
-
-void Worker::debug(const char *msg) {
-  if (DEBUG) 
-    cout << "[Worker][Time: " << currentTime << "][WID: " << id << "]"  \
-         << "[WS: " << state.current << "] " << msg << endl;
 }
 
 void Worker::setDefaultProperties() {

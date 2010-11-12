@@ -4,7 +4,7 @@ Project:
       
 To run: 
       Type 'make'
-      Run with example config './cc example.tasks'
+      Run with example config './cc'
       A log file called 'cloud.log' will be stored in the same directory
 
 To generate graphs:
