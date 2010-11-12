@@ -6,6 +6,8 @@
 
 using namespace std;
 
+extern unsigned long currentTime;
+
 bool Logger::loggerFlag = false;
 Logger* Logger::loggerInstance = NULL;
 
@@ -30,14 +32,14 @@ Logger* Logger::getLogger() {
 
 void Logger::debugInt(string debugString, int value) {
   stringstream entry; 
-  entry << "[DEBUG] " << debugString << ": ";
+  entry << "[DEBUG][" << currentTime << "] " << debugString << ": ";
   entry << value;
-  //  write(entry.str());
+  write(entry.str());
 }
 
 void Logger::debug(string debugString) {
   stringstream entry;
-  entry << "[DEBUG] " << debugString;
+  entry << "[DEBUG][" << currentTime << "] " << debugString;
   write(entry.str());
 }
 
