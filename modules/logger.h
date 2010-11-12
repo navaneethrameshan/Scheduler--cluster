@@ -29,7 +29,7 @@ class Logger {
   void debug(string debugString);
   void debugInt(string debugString, int value);
   void info(string infoString);
-  void workerAverage(long time, int workers, int jobs);
+  void workerAverage(int offline, int idle, int computing, int jobs);
   void totals(long exec, long cpu, long cost);
   
 };

@@ -122,16 +122,29 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
 }
 
 void Simulator::logRunningAverage() {
-  int no_workers = 0;
+  int offline_workers_count = 0;
+  int idle_workers_count = 0;
+  int computing_workers_count = 0;
   int queued_jobs = 0;
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
     if ((*worker)->ping()) {
-      no_workers++;
       queued_jobs += (*worker)->getQueuedJobs();
+      if ((*worker)->getState() == COMPUTING) 
+        queued_jobs++;
     }
+
+    if( (*worker)->getState() == OFFLINE  )
+      offline_workers_count++;
+    if( (*worker)->getState() == IDLE  )
+      idle_workers_count++;
+    if( (*worker)->getState() == COMPUTING  )
+      computing_workers_count++;
   } 
-  logger->workerAverage(currentTime, no_workers, queued_jobs);
+  logger->workerAverage(offline_workers_count,
+                        idle_workers_count,
+                        computing_workers_count,
+                        queued_jobs);
 }
 
 void Simulator::logTotals() {

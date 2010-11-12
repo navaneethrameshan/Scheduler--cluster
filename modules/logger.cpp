@@ -49,9 +49,13 @@ void Logger::info(string infoString) {
   // do stuff
 }
 
-void Logger::workerAverage(long time, int workers, int jobs) {
+void Logger::workerAverage(int offline, int idle, int computing, int jobs) {
   stringstream entry;
-  entry << "-" << time << "\t" << workers << "\t" << jobs;
+  entry << "-" << currentTime << "\t" 
+        << offline << "\t"
+        << idle << "\t"
+        << computing << "\t"
+        << jobs;
   write(entry.str());
 }
 
