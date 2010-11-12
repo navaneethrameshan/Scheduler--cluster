@@ -14,6 +14,7 @@
 #include <string>
 #include <cstdlib>
 #include <list>
+//#include<time.h>
 using namespace std;
 
 #include "worker.h"
@@ -30,6 +31,7 @@ class Scheduler {
   float worker_node_startup_time;
   float worker_node_sched_notif_time;
   float worker_node_cost;
+  //time_t currTime;
 
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
