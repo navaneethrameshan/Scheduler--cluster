@@ -7,7 +7,7 @@
 
 using namespace std;
 
-int clocktick; 
+int milliseconds; 
 list<Worker *>::iterator j;
 bool isFirstTime;
 
@@ -15,7 +15,7 @@ bool isFirstTime;
 Scheduler::Scheduler() 
 {
   isFirstTime = true;
-  clocktick = 0;
+  milliseconds = 0;
   string line;
   ifstream infile;
   string values[10];
@@ -36,6 +36,7 @@ Scheduler::Scheduler()
   
   scheduler_mode = values[0]; //W or S
   scheduling_interval = strtod(values[1].c_str(), NULL); //0.01 to 1 seconds atoi(strNumber.c_str());
+  scheduling_interval_for_clock = (unsigned short int)floor((1/scheduling_interval)+0.5);
   worker_node_speed = strtod(values[2].c_str(), NULL); //200 - 400 instructions per second
   worker_node_memory = strtod(values[3].c_str(), NULL); //2-8 GB
   worker_node_swapping_cost = strtod(values[4].c_str(), NULL); //2-10 instructions per GB
@@ -138,18 +139,29 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 */
 
   //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
-  int Scheduler::runScheduler()
+
+void coutScheduler(const char *str2) 
+{
+  
+  cout<<"[Scheduler] "<<str2<<endl;
+}
+
+
+int Scheduler::runScheduler()
 { 
-
-   clocktick++;
-   /* if ((clocktick)%100 == 0) {
-    cout<<"[Scheduler] clock tick "<<clocktick<<endl;
-    }*/
-
-  if(isFirstTime == true ) {
-  j = workers.begin();
-  isFirstTime = false;
-  }
+  
+      milliseconds++;
+  
+  if((milliseconds)%scheduling_interval_for_clock == 0 || milliseconds == 1) 
+    {
+  
+      //      cout<<"[Scheduler] "<<milliseconds<<endl;
+      if(isFirstTime == true ) {
+	j = workers.begin();
+	isFirstTime = false;
+      }
+      
+      
   
 
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
@@ -181,7 +193,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-			    cout<<"[Scheduler] Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl;//<<" at clock tick "<<clocktick<<endl; //Outputting
+			    cout<<"[Scheduler] JobID "<<(*i).getJobID()<<" submitted to WorkerID "<<(*j)->getWorkerID()<<endl;//<<" at clock tick "<<clocktick<<endl; 
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
 			    i--; 
 			    j++;
@@ -202,6 +214,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
 	  }
       }
+    } //end of clocktick if
 
     return 0; //returning successful exit everytime (for the time being)
   }
@@ -232,12 +245,13 @@ bool Scheduler::areAllJobsCompleted() {
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void Scheduler::print()
   {
-    cout<<"Scheduler Mode: "<<scheduler_mode<<endl;
-    cout<<"Scheduling Interval: "<<scheduling_interval<<endl;
-    cout<<"Number of queuedJobs: "<<(int)queuedJobs.size()<<endl;
-    cout<<"Number of runningJobs: "<<(int)runningJobs.size()<<endl;
-    cout<<"Number of completedJobs: "<<(int)completedJobs.size()<<endl;
-    cout<<"Total Number of workers: "<<(int)workers.size()<<endl;
+    cout<<"[Scheduler] "<<"[time: "<<milliseconds<<"]";
+    cout<<" Sched Mode:"<<scheduler_mode;
+    cout<<" Sched interval:"<<scheduling_interval;
+    cout<<" queuedJobs:"<<(int)queuedJobs.size();
+    cout<<" runningJobs:"<<(int)runningJobs.size();
+    cout<<" completedJobs:"<<(int)completedJobs.size();
+    cout<<" Num_workers:"<<(int)workers.size();
 
     list<Worker *>::iterator i;
     int offline_workers_count = 0;
@@ -254,9 +268,10 @@ bool Scheduler::areAllJobsCompleted() {
 	  computing_workers_count++;
       }
 
-  cout<<"-Number of OFFLINE workers: "<<offline_workers_count<<endl;
-  cout<<"-Number of IDLE workers: "<<idle_workers_count<<endl;
-  cout<<"-Number of COMPUTING workers: "<<computing_workers_count<<endl;
+  cout<<" OFFLINE workers:"<<offline_workers_count;
+  cout<<" IDLE workers:"<<idle_workers_count;
+  cout<<" COMPUTING workers:"<<computing_workers_count;
+  cout<<endl;
 
   }
 

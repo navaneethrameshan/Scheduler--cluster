@@ -14,7 +14,7 @@
 #include <string>
 #include <cstdlib>
 #include <list>
-//#include<time.h>
+#include <math.h>
 using namespace std;
 
 #include "worker.h"
@@ -24,6 +24,7 @@ class Scheduler {
  private:
   string scheduler_mode;
   float scheduling_interval;
+  unsigned short scheduling_interval_for_clock;
   float worker_node_speed;
   float worker_node_memory;
   float worker_node_swapping_cost;
@@ -31,7 +32,7 @@ class Scheduler {
   float worker_node_startup_time;
   float worker_node_sched_notif_time;
   float worker_node_cost;
-  //time_t currTime;
+
 
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
