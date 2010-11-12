@@ -28,6 +28,13 @@ Logger* Logger::getLogger() {
   return loggerInstance;     
 }
 
+void Logger::debugInt(string debugString, int value) {
+  stringstream entry; 
+  entry << "[DEBUG] " << debugString << ": ";
+  entry << value;
+  //  write(entry.str());
+}
+
 void Logger::debug(string debugString) {
   stringstream entry;
   entry << "[DEBUG] " << debugString;

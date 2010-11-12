@@ -14,7 +14,7 @@
 #define DEBUG false
 #endif
 
-extern long currentTime;
+extern unsigned long currentTime;
 
 class Simulator {  
  private:

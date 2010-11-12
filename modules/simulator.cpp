@@ -4,7 +4,7 @@
 #include "simulator.h"
 
 using namespace std;
-long currentTime =0;
+unsigned long currentTime = 0;
 
  Simulator::Simulator() {
   stopping = false;

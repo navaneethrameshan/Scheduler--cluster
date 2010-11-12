@@ -3,28 +3,29 @@
 
 #include "job.h"
 #include "Scheduler.h"
+#include "logger.h"
 
 #ifndef DEBUG
 #define DEBUG false
 #endif
 
 class Scheduler;
-extern long currentTime;
+extern unsigned long currentTime;
 
 enum worker_states { INITIALISING, COMPUTING, FINALISING, IDLE, OFFLINE };
 
 struct WORKER_PROPERTIES {
   int memory;
   float cost_per_hour;
-  long time_to_startup;
+  unsigned long time_to_startup;
   long swapping_time; 
   long instructions_per_time;
 };
 
 struct WORKER_STATE {
   enum worker_states current;
-  long start;
-  long started;
+  unsigned long start;
+  unsigned long started;
   long time_spent; //unused
   int available_memory;
   bool accepting_jobs;
@@ -33,6 +34,7 @@ struct WORKER_STATE {
 class Worker {
 
  private:
+  Logger* logger;
   unsigned int id;
   Scheduler *scheduler;
   WORKER_STATE state;
@@ -56,6 +58,7 @@ class Worker {
   bool hasMoreWork();
   void increaseExecutionTime();
   void increaseCPUTime();
+  bool swapJob();
 
  public:
   Worker(int id, Scheduler *sched);
@@ -68,8 +71,6 @@ class Worker {
   bool isAcceptingJobs();
   int getTotalMemory();
   float getCostPerHour();
-  long getTimeToStart();
-  long getSwappingTime();
   long getInstructionsPerTime();
   long getTotalExecutionTime();
   long getTotalCPUTime();
