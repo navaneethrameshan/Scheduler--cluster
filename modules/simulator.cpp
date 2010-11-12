@@ -64,9 +64,10 @@ file.close();
     }
 
 
-    runWorkers(); //moved up
+    runWorkers();
     
     scheduler->runScheduler();
+    scheduler->print();
     
     if ((currentTime % 1000) == 0) {
       logRunningAverage();
