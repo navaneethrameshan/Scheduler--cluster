@@ -17,7 +17,7 @@ Worker::Worker(int worker_id, Scheduler *sched) {
   total_execution_time = 0;
   total_cpu_time = 0;
 
-  logger->Logger::getLogger();
+  logger = Logger::getLogger();
 }
 
 void Worker::execute() {
@@ -137,6 +137,7 @@ bool Worker::startJob() {
     current_job = &tmp_current_job;
     jobs.pop_front();
 
+    logger->debugInt("Starting job", current_job->getJobID());
     state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
 
     setState(COMPUTING, true);
@@ -176,7 +177,7 @@ void Worker::removeJob() {
 
 void Worker::initialise() {
   if ((currentTime-state.start) < properties.time_to_startup) {
-    logger->debugInt("Init worker", getWorkerID());
+    logger->debugInt("Starting worker", getWorkerID());
   } else {
     setState(IDLE, true);
     if (hasMoreWork())
@@ -202,7 +203,7 @@ void Worker::compute() {
 }
 
 void Worker::finalise() {
-  debug("finalising");
+  logger->debugInt("Shutting down worker", getWorkerID());
   setState(OFFLINE, false);
 }
 
