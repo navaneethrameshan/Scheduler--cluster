@@ -12,15 +12,15 @@ Worker::Worker(int worker_id, Scheduler *sched) {
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
-  setDefaultProperties();
+  setDefaultProperties(); // todo: this should be set externally
   current_job = NULL;
   total_execution_time = 0;
   total_cpu_time = 0;
+
+  logger = Logger::getLogger();
 }
 
 void Worker::execute() {
-  debug("tick");
-
   switch (state.current) {
   case INITIALISING: 
     increaseExecutionTime();
@@ -91,18 +91,9 @@ float Worker::getCostPerHour() {
   return properties.cost_per_hour;
 }
 
-long Worker::getTimeToStart() {
-  return properties.time_to_startup;
-}
-
-long Worker::getSwappingTime() {
-  return properties.swapping_time;
-}
-
 long Worker::getInstructionsPerTime() {
   return properties.instructions_per_time;
 }
-
 
 unsigned int Worker::getWorkerID()
 {
@@ -145,22 +136,48 @@ bool Worker::startJob() {
     tmp_current_job = *i;
     current_job = &tmp_current_job;
     jobs.pop_front();
+
+    logger->debugInt("Starting job", current_job->getJobID());
+    state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
+
     setState(COMPUTING, true);
-    debug("Started job");
     return true;
   }
 
   return false;
 }
 
+bool Worker::swapJob() {
+  if (current_job == NULL)
+    return false; // no job to swap out
+
+  if ((int)jobs.size() == 0) 
+    return false; // no jobs to swap in
+
+  /*
+   * save progress of current job
+   * take current job, place in end of job list
+   * startJob()
+   */
+  logger->debugInt("Swapping out job", current_job->getJobID());
+
+  int instructions_completed = currentTime-state.start;
+  current_job->addInstructionsCompleted(instructions_completed);
+  jobs.push_back(tmp_current_job);
+  current_job = NULL;
+  
+  return startJob();
+}
+
 void Worker::removeJob() {
   current_job = NULL;
+  state.available_memory = getTotalMemory();
   setState(IDLE, true);
 }
 
 void Worker::initialise() {
   if ((currentTime-state.start) < properties.time_to_startup) {
-    debug("init");
+    logger->debugInt("Starting worker", getWorkerID());
   } else {
     setState(IDLE, true);
     if (hasMoreWork())
@@ -170,21 +187,23 @@ void Worker::initialise() {
 
 void Worker::compute() {
   if (hasMoreWork()) {
-    debug("compute has more work!");
     startJob();
   }
-  
-  if ((currentTime-state.start) < getTotalComputationTime()) {
-    debug("doing actual computation");      
+
+  int instructions_completed = currentTime - state.start + 
+    current_job->getInstructionsCompleted(); 
+
+  if (instructions_completed < getTotalComputationTime()) {
+    // todo: cyclic job swapping here (or spice with intelligence if needed) 
   } else {
-	debug("removing job");
-	scheduler->notifyJobCompletion(current_job->getJobID()); 
-	removeJob();
+    logger->debugInt("Removing job", current_job->getJobID());
+    scheduler->notifyJobCompletion(current_job->getJobID()); 
+    removeJob();
   }  
 }
 
 void Worker::finalise() {
-  debug("finalising");
+  logger->debugInt("Shutting down worker", getWorkerID());
   setState(OFFLINE, false);
 }
 
@@ -194,7 +213,7 @@ void Worker::idle() {
 }
 
 bool Worker::hasMoreWork() {
-  return (jobs.size() > 0);
+  return ((int)jobs.size() > 0);
 }
 
 bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
@@ -223,7 +242,7 @@ void Worker::debug(const char *msg) {
 }
 
 void Worker::setDefaultProperties() {
-  properties.memory = 512;
+  properties.memory = 2048;
   properties.cost_per_hour = 50;
   properties.time_to_startup = 0;
   properties.swapping_time = 5;

@@ -1,19 +1,38 @@
 #include"tg.h"
-
+#include "file.h"
+#include <fstream>
+using namespace std;
 
 Taskgen::Taskgen(Scheduler *sched)
 {
+logger = Logger::getLogger();
 scheduler = sched;
 
 }
-list<Task > Taskgen::create_task(Task * given_task, Job *job){
+list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_input){
 	 srand(time(NULL));
-	  for(int i=0;i<NO_JOBS;i++){
-         job[i].init(TASK_ID,(i+JOB_START_ID),INST, MEM);
+	 fstream file("modules/input.conf");
+	 string strings;
+	 for(int i=0; i<total_input; i++){
+		file>> strings;
+		file>> TASK_ID;
+		file>> NO_JOB;
+		file>> RATE;
+		file>> JOB_START_ID;
+		file>>  LOW_INST_BOUND;
+		file>> HIGH_INST_BOUND;
+		file>> LOW_MEM;
+		file>> HIGH_MEM;
+		
+	  for(int k=0;k<NO_JOB;k++){
+	  MEM= LOW_MEM+rand()%((HIGH_MEM-LOW_MEM!=0)?(HIGH_MEM-LOW_MEM):1);
+ INST=LOW_INST_BOUND+rand()%((HIGH_INST_BOUND-LOW_INST_BOUND!=0)?(HIGH_INST_BOUND-LOW_INST_BOUND):1);
+         job[i][k].init(TASK_ID,(k+JOB_START_ID),INST, MEM);
          }
-         given_task->init(TASK_ID,NO_JOBS,job,RATE);
-         add_task_list(given_task);
-	 showtask();
+         given_task[i].init(TASK_ID,NO_JOB,job[i],RATE); 
+         add_task_list(given_task+i);
+         }
+         showtask();
          return (list1); 
  }
  
@@ -51,12 +70,13 @@ list<Task > Taskgen::create_task(Task * given_task, Job *job){
  	list<Task  >::iterator j;
        for(j=list1.begin(); j != list1.end(); ++j){
       		(*j).show();
+      		cout<< endl;
        }	
  }
  
  void Taskgen:: showjob(){
  	list<Job * >::iterator j;
        for(j=list2.begin(); j != list2.end(); ++j){
-      		(*j)->show();
+      		logger->debug("Sending job: " + (*j)->show());
        }	
  }

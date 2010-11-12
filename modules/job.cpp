@@ -1,5 +1,8 @@
-#include"job.h"
 #include<iostream>
+#include<sstream>
+#include<string>
+#include"job.h"
+
 using namespace std;
 
 void Job:: init(int taskid, int jobid, int inst, int mem){
@@ -7,12 +10,15 @@ void Job:: init(int taskid, int jobid, int inst, int mem){
   job_id=jobid;
   no_inst=inst;
   mem_size=mem;
+  instructions_completed = 0;
 }
 
-void Job:: show(){
-  cout<< "\nJob ID: "<< job_id<<" Job Inst: "<<no_inst<<" Job Mem: "<<mem_size<< "\n";
+string Job:: show(){
+  stringstream s;
+  s << "Task ID: "<<task_id<< " Job ID: "<< job_id
+    <<" Job Inst: "<<no_inst<<" Job Mem: "<<mem_size;
+  return s.str();
 }
-
 
 //added by Wasif
 unsigned int Job::getJobID()
@@ -23,4 +29,21 @@ unsigned int Job::getJobID()
 //added by archie
 int Job::getNumberOfInstructions() {
   return no_inst;
+}
+
+int Job::getMemoryConsumption() {
+  return mem_size;
+}
+
+bool Job::addInstructionsCompleted(int instructions) {
+  if (instructions_completed+instructions >= no_inst)
+    return false;
+
+  instructions_completed += instructions;
+
+  return true;
+}
+
+int Job::getInstructionsCompleted() {
+  return instructions_completed;
 }

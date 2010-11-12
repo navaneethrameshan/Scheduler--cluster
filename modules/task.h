@@ -2,9 +2,8 @@
 class Task{
 	
 	int task_id;
-	int job_rate;
 	public:
-	
+	int job_rate;
 	int no_jobs;
         Job *jobs_list;
        
