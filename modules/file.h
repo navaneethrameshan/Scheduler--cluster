@@ -1,11 +1,10 @@
-
-#define NO_JOBS 8
-#define JOB_START_ID 1
-#define TASK_ID 1
-#define LOW_INST_BOUND 1000
-#define HIGH_INST_BOUND 2000
-#define LOW_MEM 512
-#define HIGH_MEM 1024
-#define RATE 3
-#define MEM LOW_MEM+rand()%((HIGH_MEM-LOW_MEM!=0)?(HIGH_MEM-LOW_MEM):1)
-#define INST LOW_INST_BOUND+rand()%((HIGH_INST_BOUND-LOW_INST_BOUND!=0)?(HIGH_INST_BOUND-LOW_INST_BOUND):1)
+int NO_JOB ;
+int JOB_START_ID ;
+int TASK_ID ;
+int LOW_INST_BOUND ;
+int HIGH_INST_BOUND ;
+int LOW_MEM ;
+int HIGH_MEM ;
+int RATE ;
+int MEM;
+int INST;
