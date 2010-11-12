@@ -32,15 +32,16 @@ class Scheduler {
   float worker_node_startup_time;
   float worker_node_sched_notif_time;
   float worker_node_cost;
-
-
+  int milliseconds; 
+  bool isFirstTime;
+  
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
   list<Job > completedJobs; //Contains jobs which have been completed
   list<Job > runningJobs;   //Contains jobs which are currently in running state
-  
 
-  
+  list<Worker *>::iterator j; //iterator used by runScheduler() function
+
  public:
 
 
