@@ -140,12 +140,6 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
   //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
 
-void coutScheduler(const char *str2) 
-{
-  
-  cout<<"[Scheduler] "<<str2<<endl;
-}
-
 
 int Scheduler::runScheduler()
 { 
@@ -155,7 +149,6 @@ int Scheduler::runScheduler()
   if((milliseconds)%scheduling_interval_for_clock == 0 || milliseconds == 1) 
     {
   
-      //      cout<<"[Scheduler] "<<milliseconds<<endl;
       if(isFirstTime == true ) {
 	j = workers.begin();
 	isFirstTime = false;
@@ -179,7 +172,7 @@ int Scheduler::runScheduler()
 	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
 	      {
 
-		    if( 
+		if( 
 		       (*j)->getState() == COMPUTING 
 		       || (*j)->getState() == IDLE 
 		       || (*j)->getState() == OFFLINE 
@@ -193,7 +186,7 @@ int Scheduler::runScheduler()
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-			    cout<<"[Scheduler] JobID "<<(*i).getJobID()<<" submitted to WorkerID "<<(*j)->getWorkerID()<<endl;//<<" at clock tick "<<clocktick<<endl; 
+			    cout<<"[Scheduler] [time:"<<milliseconds<<"]JobID "<<(*i).getJobID()<<" submitted to WorkerID "<<(*j)->getWorkerID()<<endl;
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
 			    i--; 
 			    j++;
@@ -203,10 +196,6 @@ int Scheduler::runScheduler()
 			      }
 			   
 			  }
-			/*	else
-			  {
-			    continue;
-			    }*/
 			
 		      }
 
@@ -216,12 +205,12 @@ int Scheduler::runScheduler()
       }
     } //end of clocktick if
 
-    return 0; //returning successful exit everytime (for the time being)
-  }
+  return 0; //returning successful exit everytime (for the time being)
+}
     
 
-  //! A Worker node will notify the Scheduler when a job finishes its execution
-  int Scheduler::notifyJobCompletion(unsigned int job_id)
+//! A Worker node will notify the Scheduler when a job finishes its execution
+int Scheduler::notifyJobCompletion(unsigned int job_id)
   {
     //find the job_id in the runningJobs List
     list<Job >::iterator i;
@@ -245,13 +234,13 @@ bool Scheduler::areAllJobsCompleted() {
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void Scheduler::print()
   {
-    cout<<"[Scheduler] "<<"[time: "<<milliseconds<<"]";
-    cout<<" Sched Mode:"<<scheduler_mode;
-    cout<<" Sched interval:"<<scheduling_interval;
+    cout<<"[Scheduler] "<<"[time:"<<milliseconds<<"]";
+    cout<<" schedMode:"<<scheduler_mode;
+    cout<<" schedInterval:"<<scheduling_interval;
     cout<<" queuedJobs:"<<(int)queuedJobs.size();
     cout<<" runningJobs:"<<(int)runningJobs.size();
     cout<<" completedJobs:"<<(int)completedJobs.size();
-    cout<<" Num_workers:"<<(int)workers.size();
+    cout<<" numWorkers:"<<(int)workers.size();
 
     list<Worker *>::iterator i;
     int offline_workers_count = 0;
@@ -268,9 +257,9 @@ bool Scheduler::areAllJobsCompleted() {
 	  computing_workers_count++;
       }
 
-  cout<<" OFFLINE workers:"<<offline_workers_count;
-  cout<<" IDLE workers:"<<idle_workers_count;
-  cout<<" COMPUTING workers:"<<computing_workers_count;
+  cout<<" OFFLINEworkers:"<<offline_workers_count;
+  cout<<" IDLEworkers:"<<idle_workers_count;
+  cout<<" COMPUTINGworkers:"<<computing_workers_count;
   cout<<endl;
 
   }
