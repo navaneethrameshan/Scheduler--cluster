@@ -103,7 +103,7 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   Worker *w1 = new Worker(1,scheduler);
   w1->startWorker();
   workers.push_back(w1);
-
+  /*
   Worker *w2 = new Worker(2,scheduler);
   w2->startWorker();
   workers.push_back(w2);
@@ -111,13 +111,11 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   Worker *w3 = new Worker(3,scheduler);
   w3->startWorker();
   workers.push_back(w3);
-  /*
+
   Worker *w4 = new Worker(4,scheduler);
   w4->startWorker();
   workers.push_back(w4);
   */
-
-
   return true;
 }
 
@@ -138,7 +136,8 @@ void Simulator::logRunningAverage() {
       offline_workers_count++;
     if( (*worker)->getState() == IDLE  )
       idle_workers_count++;
-    if( (*worker)->getState() == COMPUTING  )
+    if( (*worker)->getState() == COMPUTING || 
+        (*worker)->getState() == SWAPPING  )
       computing_workers_count++;
   } 
   logger->workerAverage(offline_workers_count,

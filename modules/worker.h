@@ -8,13 +8,13 @@
 class Scheduler;
 extern unsigned long currentTime;
 
-enum worker_states { INITIALISING, COMPUTING, FINALISING, IDLE, OFFLINE };
+enum worker_states { INITIALISING, COMPUTING, SWAPPING, FINALISING, IDLE, OFFLINE };
 
 struct WORKER_PROPERTIES {
   int memory;
   float cost_per_hour;
   unsigned long time_to_startup;
-  long swapping_time; 
+  unsigned long swapping_time; 
   long instructions_per_time;
 };
 
@@ -43,6 +43,7 @@ class Worker {
 
   void initialise();
   void compute();
+  void swap();
   void finalise();
   void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);

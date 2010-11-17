@@ -32,6 +32,11 @@ void Worker::execute() {
     increaseCPUTime();
     compute();
     break;
+  case SWAPPING: 
+    increaseExecutionTime();
+    increaseCPUTime();
+    swap();
+    break;
   case FINALISING:
     increaseExecutionTime();
     increaseCPUTime();
@@ -62,6 +67,7 @@ bool Worker::submitJobs(list<Job> newjobs) {
   if (isAcceptingJobs()) {
     list<Job>::iterator newjob;
     for (newjob = newjobs.begin(); newjob != newjobs.end(); ++newjob) {
+      logger->debugInt("Job ID received", (*newjob).getJobID());
       jobs.push_back(*newjob); // should check max size
     }
     return true;
@@ -103,6 +109,7 @@ unsigned int Worker::getWorkerID()
 bool Worker::ping() {
   return (state.current == IDLE ||
           state.current == COMPUTING ||
+          state.current == SWAPPING || 
           state.current == INITIALISING);
 }
 
@@ -148,25 +155,26 @@ bool Worker::startJob() {
 }
 
 bool Worker::swapJob() {
+  if (getState() == SWAPPING) 
+    return false; // already swapping
+
   if (current_job == NULL)
     return false; // no job to swap out
 
   if ((int)jobs.size() == 0) 
     return false; // no jobs to swap in
 
-  /*
-   * save progress of current job
-   * take current job, place in end of job list
-   * startJob()
-   */
   logger->debugInt("Swapping out job", current_job->getJobID());
 
-  int instructions_completed = currentTime-state.start;
+  int instructions_completed = currentTime - state.start;
   current_job->addInstructionsCompleted(instructions_completed);
+  current_job->increaseSwapCount();
   jobs.push_back(tmp_current_job);
   current_job = NULL;
+
+  setState(SWAPPING, false);
   
-  return startJob();
+  return true;
 }
 
 void Worker::removeJob() {
@@ -188,18 +196,29 @@ void Worker::initialise() {
 void Worker::compute() {
   if (hasMoreWork()) {
     startJob();
-  }
-
-  int instructions_completed = currentTime - state.start + 
-    current_job->getInstructionsCompleted(); 
-
-  if (instructions_completed < getTotalComputationTime()) {
-    // todo: cyclic job swapping here (or spice with intelligence if needed) 
-  } else {
-    logger->debugInt("Removing job", current_job->getJobID());
-    scheduler->notifyJobCompletion(current_job->getJobID()); 
-    removeJob();
   }  
+
+  if (current_job != NULL) {
+    int instructions_completed = currentTime - state.start + 
+      current_job->getInstructionsCompleted(); 
+
+    if (instructions_completed == getTotalComputationTime()) {
+      logger->debugInt("Removing job", current_job->getJobID());
+      scheduler->notifyJobCompletion(current_job->getJobID()); 
+      removeJob();
+    }  
+
+    if ((instructions_completed % 500) == 0) {
+      swapJob();            
+    }
+  }
+}
+
+void Worker::swap() {
+  if ((currentTime-state.start) == properties.swapping_time-1) {
+    setState(IDLE, true);
+    logger->debugInt("Swap completed on", getWorkerID());
+  }
 }
 
 void Worker::finalise() {
@@ -236,7 +255,7 @@ void Worker::increaseCPUTime() {
 }
 
 void Worker::setDefaultProperties() {
-  properties.memory = 2048;
+  properties.memory = 4096;
   properties.cost_per_hour = 50;
   properties.time_to_startup = 0;
   properties.swapping_time = 5;

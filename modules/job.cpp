@@ -11,6 +11,7 @@ void Job:: init(int taskid, int jobid, int inst, int mem){
   no_inst=inst;
   mem_size=mem;
   instructions_completed = 0;
+  swap_count = 0;
 }
 
 string Job:: show(){
@@ -46,4 +47,8 @@ bool Job::addInstructionsCompleted(int instructions) {
 
 int Job::getInstructionsCompleted() {
   return instructions_completed;
+}
+
+int Job::increaseSwapCount() {
+  return swap_count++;
 }

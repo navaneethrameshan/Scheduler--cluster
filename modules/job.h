@@ -11,6 +11,7 @@ class Job {
   int mem_size;
 
   int instructions_completed;
+  int swap_count;
   
  public:
   int job_id;
@@ -24,6 +25,7 @@ class Job {
   int getMemoryConsumption();
   bool addInstructionsCompleted(int instructions);
   int getInstructionsCompleted();
+  int increaseSwapCount();
 };
 
 #endif /* __WORKER__ */
