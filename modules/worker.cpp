@@ -114,21 +114,27 @@ bool Worker::ping() {
 }
 
 long Worker::getTotalExecutionTime() {
-  return total_execution_time/getInstructionsPerTime();
+  return total_execution_time;
 }
 
 long Worker::getTotalCPUTime() {
-  return total_cpu_time/getInstructionsPerTime();
+  return total_cpu_time;
 }
 
-long Worker::getTotalCost() {
-  // assuming time is seconds
-  long hours = getTotalCPUTime() / 60;
-  // rounding up
-  if ((hours % 60) > 0) 
-    hours++;
+float Worker::getTotalCost() {
+  // assuming time is milliseconds
+  int s = getTotalCPUTime() / 100; // seconds
+  int m = s / 60; // minutes
+  int h = m / 60; // hours;
 
-  return hours*getCostPerHour();
+  // rounding up
+  if (h == 0 && m == 0 && s > 0) 
+    h++;
+
+  if ((m % 60) > 0) 
+    h++;
+
+  return h*getCostPerHour();
 }
 
 int Worker::getQueuedJobs() {
@@ -194,21 +200,24 @@ void Worker::initialise() {
 }
 
 void Worker::compute() {
+  int instructions_completed;
+  int runover;
   if (hasMoreWork()) {
     startJob();
   }  
 
   if (current_job != NULL) {
-    int instructions_completed = currentTime - state.start + 
-      current_job->getInstructionsCompleted(); 
+    instructions_completed = (currentTime - state.start) *
+      properties.instructions_per_time + current_job->getInstructionsCompleted(); 
 
-    if (instructions_completed == getTotalComputationTime()) {
-      logger->debugInt("Removing job", current_job->getJobID());
+    if ((runover = instructions_completed - getTotalComputationTime()) >= 0) {
+      logger->workerInt("Job runover", runover);
+      logger->workerInt("Removing job", current_job->getJobID());
       scheduler->notifyJobCompletion(current_job->getJobID()); 
       removeJob();
     }  
 
-    if ((instructions_completed % 500) == 0) {
+    if ((instructions_completed % 5000) == 0) {
       swapJob();            
     }
   }
@@ -217,12 +226,12 @@ void Worker::compute() {
 void Worker::swap() {
   if ((currentTime-state.start) == properties.swapping_time-1) {
     setState(IDLE, true);
-    logger->debugInt("Swap completed on", getWorkerID());
+    logger->workerInt("Swap completed on", getWorkerID());
   }
 }
 
 void Worker::finalise() {
-  logger->debugInt("Shutting down worker", getWorkerID());
+  logger->workerInt("Shutting down worker", getWorkerID());
   setState(OFFLINE, false);
 }
 
@@ -256,8 +265,8 @@ void Worker::increaseCPUTime() {
 
 void Worker::setDefaultProperties() {
   properties.memory = 4096;
-  properties.cost_per_hour = 50;
+  properties.cost_per_hour = 0.5;
   properties.time_to_startup = 0;
   properties.swapping_time = 5;
-  properties.instructions_per_time = 1;
+  properties.instructions_per_time = 40; // instructions 
 }

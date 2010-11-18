@@ -32,17 +32,29 @@ Logger* Logger::getLogger() {
   return loggerInstance;     
 }
 
-void Logger::debugInt(string debugString, int value) {
+void Logger::workerInt(string debugString, int value) {
+  debugInt("WORKER", debugString, value);
+}
+
+void Logger::debugInt(string entity, string debugString, int value) {
   stringstream entry; 
-  entry << "[DEBUG][" << currentTime << "] " << debugString << ": ";
+  entry << "[" << entity << "][" << currentTime << "] " << debugString << ": ";
   entry << value;
   write(entry.str());
 }
 
-void Logger::debug(string debugString) {
+void Logger::debugInt(string debugString, int value) {
+  debugInt("DEBUG", debugString, value);
+}
+
+void Logger::debug(string entity, string debugString) {
   stringstream entry;
-  entry << "[DEBUG][" << currentTime << "] " << debugString;
+  entry << "[" << entity << "][" << currentTime << "] " << debugString;
   write(entry.str());
+}
+
+void Logger::debug(string debugString) {
+  debug("DEBUG", debugString);
 }
 
 void Logger::info(string infoString) {
@@ -59,9 +71,9 @@ void Logger::workerAverage(int offline, int idle, int computing, int jobs) {
   write(entry.str());
 }
 
-void Logger::totals(long exec, long cpu, long cost) {
+void Logger::totals(long exec, long cpu, float cost) {
   stringstream entry;
-  entry << "[TOTALS] CPU: " << cpu
+  entry << "[SUMMARY] CPU: " << cpu
         << " EXECUTION: " << exec
         << " COST: " << cost;
   write(entry.str());

@@ -70,7 +70,7 @@ class Worker {
   long getInstructionsPerTime();
   long getTotalExecutionTime();
   long getTotalCPUTime();
-  long getTotalCost();
+  float getTotalCost();
   int getQueuedJobs();
   bool ping();
 
