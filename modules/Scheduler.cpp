@@ -14,6 +14,8 @@ bool isFirstTime;
   //! default constructor - reads the configuration from modules/scheduler.conf
 Scheduler::Scheduler() 
 {
+  log = Logger::getLogger();
+  cout << "KLASJDFLKSADJFKLSDJALSKDJF";
   isFirstTime = true;
   milliseconds = 0;
   string line;
@@ -232,35 +234,12 @@ bool Scheduler::areAllJobsCompleted() {
 }
 
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
-  void Scheduler::print()
-  {
-    cout<<"[Scheduler] "<<"[time:"<<milliseconds<<"]";
-    cout<<" schedMode:"<<scheduler_mode;
-    cout<<" schedInterval:"<<scheduling_interval;
-    cout<<" queuedJobs:"<<(int)queuedJobs.size();
-    cout<<" runningJobs:"<<(int)runningJobs.size();
-    cout<<" completedJobs:"<<(int)completedJobs.size();
-    cout<<" numWorkers:"<<(int)workers.size();
-
-    list<Worker *>::iterator i;
-    int offline_workers_count = 0;
-    int idle_workers_count = 0;
-    int computing_workers_count = 0;
-
-    for(i=workers.begin();i!=workers.end();++i)
-      {
-	if( (*i)->getState() == OFFLINE  )
-	  offline_workers_count++;
-	if( (*i)->getState() == IDLE  )
-	  idle_workers_count++;
-	if( (*i)->getState() == COMPUTING  )
-	  computing_workers_count++;
-      }
-
-  cout<<" OFFLINEworkers:"<<offline_workers_count;
-  cout<<" IDLEworkers:"<<idle_workers_count;
-  cout<<" COMPUTINGworkers:"<<computing_workers_count;
-  cout<<endl;
-
-  }
+void Scheduler::print()
+{
+  log->status(scheduler_mode, scheduling_interval, 
+              (int)queuedJobs.size(),
+              (int)runningJobs.size(),
+              (int)completedJobs.size());
+  
+}
 

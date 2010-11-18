@@ -47,6 +47,19 @@ void Logger::debugInt(string debugString, int value) {
   debugInt("DEBUG", debugString, value);
 }
 
+void Logger::status(string mode, float interval, int queue, int running,
+                    int completed) {
+  stringstream entry; 
+  entry << "[SCHEDULER] Mode: " << mode << " Interval: " << interval
+        << " Queue: " << queue << " Running: " << running
+        << " Completed: " << completed;
+  write(entry.str());
+}
+
+void Logger::decision(string decision) {
+  debug("SCHEDULER", decision);
+}
+
 void Logger::debug(string entity, string debugString) {
   stringstream entry;
   entry << "[" << entity << "][" << currentTime << "] " << debugString;

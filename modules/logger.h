@@ -32,6 +32,12 @@ class Logger {
   void debugInt(string entity, string debugString, int value);
   void workerInt(string wString, int value);
   void info(string infoString);
+
+  // scheduler
+  void status(string mode, float interval, int queue, int running, int completed);
+  void decision(string decision);
+
+  // simulator
   void workerAverage(int offline, int idle, int computing, int jobs);
   void totals(long exec, long cpu, float cost);
   

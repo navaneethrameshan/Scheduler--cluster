@@ -18,10 +18,12 @@
 using namespace std;
 
 #include "worker.h"
+#include "logger.h"
 class Worker;
 class Scheduler {
 
  private:
+  Logger* log;
   string scheduler_mode;
   float scheduling_interval;
   unsigned short scheduling_interval_for_clock;
