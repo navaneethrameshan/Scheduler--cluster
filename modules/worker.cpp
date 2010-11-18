@@ -68,7 +68,7 @@ bool Worker::submitJobs(list<Job> newjobs) {
     list<Job>::iterator newjob;
     for (newjob = newjobs.begin(); newjob != newjobs.end(); ++newjob) {
       logger->debugInt("Job ID received", (*newjob).getJobID());
-      jobs.push_back(*newjob); // should check max size
+      jobs.push_back(*newjob); // todo: should check max size
     }
     return true;
   } else 
@@ -84,9 +84,7 @@ int Worker::getAvailableMemory() {
 }
 
 bool Worker::isAcceptingJobs() {
-  return (state.current == IDLE || 
-          (state.current == COMPUTING &&
-           state.accepting_jobs == true)) ;
+  return state.accepting_jobs;
 }
 
 int Worker::getTotalMemory() {
@@ -153,6 +151,11 @@ bool Worker::startJob() {
     logger->debugInt("Starting job", current_job->getJobID());
     state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
 
+    /* Todo:
+     * Try to start job, if it exceeds available memory
+     * notify scheduler that it is too big. Ask to transfer/cancel.
+     */
+
     setState(COMPUTING, true);
     return true;
   }
@@ -190,9 +193,8 @@ void Worker::removeJob() {
 }
 
 void Worker::initialise() {
-  if ((currentTime-state.start) < properties.time_to_startup) {
-    logger->debugInt("Starting worker", getWorkerID());
-  } else {
+  if ((currentTime-state.start) == properties.time_to_startup) {
+    logger->debugInt("Worker with ID started", getWorkerID());
     setState(IDLE, true);
     if (hasMoreWork())
       startJob();
@@ -266,7 +268,7 @@ void Worker::increaseCPUTime() {
 void Worker::setDefaultProperties() {
   properties.memory = 4096;
   properties.cost_per_hour = 0.5;
-  properties.time_to_startup = 0;
+  properties.time_to_startup = 10;
   properties.swapping_time = 5;
   properties.instructions_per_time = 40; // instructions 
 }

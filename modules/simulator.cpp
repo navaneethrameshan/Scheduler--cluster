@@ -100,22 +100,16 @@ void Simulator::runWorkers() {
 
 bool Simulator::readWorkers(Scheduler *scheduler) {
   // todo: should be read from file
-  Worker *w1 = new Worker(1,scheduler);
-  w1->startWorker();
-  workers.push_back(w1);
-  /*
-  Worker *w2 = new Worker(2,scheduler);
-  w2->startWorker();
-  workers.push_back(w2);
+  int started_workers = 3;
+  int workers_to_create = 3;
+  
+  for (int i = 1; i <= workers_to_create; i++) {
+    Worker *worker = new Worker(i,scheduler);
+    if (i <= started_workers)
+      worker->startWorker();
+    workers.push_back(worker);
+  }
 
-  Worker *w3 = new Worker(3,scheduler);
-  w3->startWorker();
-  workers.push_back(w3);
-
-  Worker *w4 = new Worker(4,scheduler);
-  w4->startWorker();
-  workers.push_back(w4);
-  */
   return true;
 }
 
@@ -149,7 +143,7 @@ void Simulator::logRunningAverage() {
 void Simulator::logTotals() {
   long totalExecutionTime = 0;
   long totalCPUTime = 0;
-  long totalCost = 0;
+  float totalCost = 0;
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
     totalExecutionTime += (*worker)->getTotalExecutionTime();
