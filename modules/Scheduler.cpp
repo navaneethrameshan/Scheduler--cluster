@@ -3,6 +3,7 @@
 #include <string>
 #include <cstdlib>
 #include <list>
+#include <sstream>
 #include "Scheduler.h"
 
 using namespace std;
@@ -161,8 +162,7 @@ int Scheduler::runScheduler()
 
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
       {
-	//Nothing to do, so chilling!
-	cout<<"Nothing to do, so chilling!"<<endl;
+	log->decision("Nothing to do, so chilling!");
 	return 0;
       }
     else 
@@ -188,7 +188,12 @@ int Scheduler::runScheduler()
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-			    cout<<"[Scheduler] [time:"<<milliseconds<<"]JobID "<<(*i).getJobID()<<" submitted to WorkerID "<<(*j)->getWorkerID()<<endl;
+                            
+                            
+			    stringstream s;
+                            s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID();
+                            log->decision(s.str());
+
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
 			    i--; 
 			    j++;

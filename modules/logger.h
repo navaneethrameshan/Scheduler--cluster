@@ -1,10 +1,6 @@
 #ifndef __LOGGER__
 #define __LOGGER__
 
-#ifndef DEBUG
-#define DEBUG true
-#endif
-
 #include <iostream>
 #include <fstream>
 using namespace std;

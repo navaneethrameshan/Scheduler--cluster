@@ -154,8 +154,3 @@ void Simulator::logTotals() {
                  totalCPUTime,
                  totalCost);
 }
-
-void Simulator::debug(const char* msg) {
-  if (DEBUG)
-    cout << "[Simulator][" << currentTime << "] " << msg << "\n";
-}

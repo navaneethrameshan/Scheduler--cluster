@@ -19,13 +19,11 @@ class Simulator {
   bool stopping;
 
   bool cleanUp();
-  void debug(const char* msg);
   int start_pos;
   bool readWorkers(Scheduler* scheduler);
   void runWorkers();
   void logRunningAverage();
   void logTotals();
-  
 
  public:
   Simulator();
