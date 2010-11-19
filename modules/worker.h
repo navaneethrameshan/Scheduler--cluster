@@ -22,6 +22,7 @@ struct WORKER_STATE {
   enum worker_states current;
   unsigned long start;
   unsigned long started;
+  unsigned long average_response_time;
   long time_spent; //unused
   int available_memory;
   bool accepting_jobs;
@@ -70,6 +71,7 @@ class Worker {
   long getInstructionsPerTime();
   long getTotalExecutionTime();
   long getTotalCPUTime();
+  double getAverageResponseTime();
   float getTotalCost();
   int getQueuedJobs();
   bool ping();

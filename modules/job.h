@@ -12,6 +12,7 @@ class Job {
 
   int instructions_completed;
   int swap_count;
+  unsigned long started;
   
  public:
   int job_id;
@@ -26,6 +27,8 @@ class Job {
   bool addInstructionsCompleted(int instructions);
   int getInstructionsCompleted();
   int increaseSwapCount();
+  unsigned long getStartedTime();
+  void setStartedTime();
 };
 
 #endif /* __WORKER__ */

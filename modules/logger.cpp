@@ -53,9 +53,12 @@ void Logger::workerInt(string debugString, int value) {
 }
 
 /* for simulator */ 
-void Logger::workerAverage(int offline, int idle, int computing, int jobs) {
+void Logger::workerAverage(double avg_response_time, float cost,
+                           int offline, int idle, int computing, int jobs) {
   stringstream entry;
   entry << "-" << currentTime << "\t" 
+        << avg_response_time << "\t"
+        << cost << "\t"
         << offline << "\t"
         << idle << "\t"
         << computing << "\t"

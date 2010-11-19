@@ -34,7 +34,8 @@ class Logger {
   void decision(string decision);
 
   // simulator
-  void workerAverage(int offline, int idle, int computing, int jobs);
+  void workerAverage(double avg_response_time, float cost,
+                     int offline, int idle, int computing, int jobs);
   void totals(long exec, long cpu, float cost);
   
 };

@@ -75,7 +75,7 @@ file.close();
 
     currentTime++;
   }
-
+  scheduler->print();   
   cleanUp();
 }
 
@@ -118,6 +118,9 @@ void Simulator::logRunningAverage() {
   int idle_workers_count = 0;
   int computing_workers_count = 0;
   int queued_jobs = 0;
+  double avg_response_time = 0;
+  float cost_so_far = 0;
+
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
     if ((*worker)->ping()) {
@@ -126,15 +129,29 @@ void Simulator::logRunningAverage() {
         queued_jobs++;
     }
 
-    if( (*worker)->getState() == OFFLINE  )
-      offline_workers_count++;
-    if( (*worker)->getState() == IDLE  )
+    if( (*worker)->getState() == OFFLINE  ) {
+      offline_workers_count++; 
+      cost_so_far += (*worker)->getTotalCost();
+    }
+    if( (*worker)->getState() == IDLE  ) {
       idle_workers_count++;
+      cost_so_far += (*worker)->getTotalCost();
+      avg_response_time += (*worker)->getAverageResponseTime();
+    }
     if( (*worker)->getState() == COMPUTING || 
-        (*worker)->getState() == SWAPPING  )
+        (*worker)->getState() == SWAPPING  ) {
       computing_workers_count++;
+      cost_so_far += (*worker)->getTotalCost();
+      avg_response_time += (*worker)->getAverageResponseTime();
+    }
   } 
-  logger->workerAverage(offline_workers_count,
+  
+  avg_response_time = avg_response_time/(idle_workers_count + 
+                                         computing_workers_count);
+
+  logger->workerAverage(avg_response_time, 
+                        cost_so_far,
+                        offline_workers_count,
                         idle_workers_count,
                         computing_workers_count,
                         queued_jobs);

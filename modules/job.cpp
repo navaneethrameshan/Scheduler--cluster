@@ -5,6 +5,8 @@
 
 using namespace std;
 
+extern unsigned long currentTime;
+
 void Job:: init(int taskid, int jobid, int inst, int mem){
   task_id=taskid;
   job_id=jobid;
@@ -51,4 +53,12 @@ int Job::getInstructionsCompleted() {
 
 int Job::increaseSwapCount() {
   return swap_count++;
+}
+
+void Job::setStartedTime() {
+  started = currentTime;
+}
+
+unsigned long Job::getStartedTime() {
+  return started;
 }

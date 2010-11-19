@@ -24,7 +24,7 @@ graphs:
 	mkdir -p graphs/
 	python graphgenerator.py cloud.log
 	gnuplot *.plot
-	mv cloud.log *.plot *.data graphs/
+	mv *.plot *.data graphs/
 
 clean:
 	@rm -f $(EXECUTABLE)

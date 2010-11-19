@@ -67,7 +67,8 @@ bool Worker::submitJobs(list<Job> newjobs) {
   if (isAcceptingJobs()) {
     list<Job>::iterator newjob;
     for (newjob = newjobs.begin(); newjob != newjobs.end(); ++newjob) {
-      logger->debugInt("Job ID received", (*newjob).getJobID());
+      logger->workerInt("Job ID received", (*newjob).getJobID());
+      (*newjob).setStartedTime();
       jobs.push_back(*newjob); // todo: should check max size
     }
     return true;
@@ -117,6 +118,23 @@ long Worker::getTotalExecutionTime() {
 
 long Worker::getTotalCPUTime() {
   return total_cpu_time;
+}
+
+double Worker::getAverageResponseTime() {
+  double avg = 0;
+  int number_of_jobs = 0;
+  
+  list<Job>::iterator job;
+  for (job = jobs.begin(); job != jobs.end(); ++job) {
+    avg += currentTime - (*job).getStartedTime();
+  }
+
+  if (current_job != NULL) {
+    avg += currentTime - current_job->getStartedTime();
+    number_of_jobs++;
+  }
+
+  return (number_of_jobs > 0 ? avg/number_of_jobs : avg);
 }
 
 float Worker::getTotalCost() {
@@ -268,7 +286,7 @@ void Worker::increaseCPUTime() {
 void Worker::setDefaultProperties() {
   properties.memory = 4096;
   properties.cost_per_hour = 0.5;
-  properties.time_to_startup = 10;
-  properties.swapping_time = 5;
+  properties.time_to_startup = 100;
+  properties.swapping_time = 5; // instructions per gb
   properties.instructions_per_time = 40; // instructions 
 }
