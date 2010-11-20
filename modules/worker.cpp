@@ -139,7 +139,7 @@ double Worker::getAverageResponseTime() {
 
 float Worker::getTotalCost() {
   // assuming time is milliseconds
-  int s = getTotalCPUTime() / 100; // seconds
+  int s = getTotalCPUTime() / 1000; // seconds
   int m = s / 60; // minutes
   int h = m / 60; // hours;
 

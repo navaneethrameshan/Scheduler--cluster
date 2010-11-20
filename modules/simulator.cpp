@@ -1,5 +1,6 @@
 #include <list>
 #include <iostream>
+#include <fstream>
 
 #include "simulator.h"
 
@@ -67,6 +68,7 @@ file.close();
     runWorkers();
     
     scheduler->runScheduler();
+    scheduler->print();   //just added for debugging - can be removed
     
     if ((currentTime % 500) == 0) {
       logRunningAverage();
@@ -99,9 +101,29 @@ void Simulator::runWorkers() {
 }
 
 bool Simulator::readWorkers(Scheduler *scheduler) {
-  // todo: should be read from file
-  int started_workers = 3;
-  int workers_to_create = 3;
+  // todo: should be read from file - DONE
+
+ ifstream infile;
+  string values[20];
+  string line;
+  int i=0;
+  infile.open ("modules/workers.conf");
+
+  while(!infile.eof()) // To get you all the lines.
+    {
+      getline(infile,line); // Saves the line in STRING.
+      if( (line.find('#') != 0) ) //this will ignore the lines having a '#' character 
+	{
+	  values[i] = line;
+	  i++;
+	}
+    }
+  infile.close();
+
+  int started_workers = strtod(values[0].c_str(), NULL);
+  int workers_to_create = strtod(values[1].c_str(),NULL);
+
+ 
   
   for (int i = 1; i <= workers_to_create; i++) {
     Worker *worker = new Worker(i,scheduler);

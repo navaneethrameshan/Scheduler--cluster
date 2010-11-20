@@ -191,7 +191,7 @@ int Scheduler::runScheduler()
                             
                             
 			    stringstream s;
-                            s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID();
+                            s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
                             log->decision(s.str());
 
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs

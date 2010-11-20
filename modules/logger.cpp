@@ -37,7 +37,7 @@ Logger* Logger::getLogger() {
 void Logger::status(string mode, float interval, int queue, int running,
                     int completed) {
   stringstream entry; 
-  entry << "[SCHEDULER] Mode: " << mode << " Interval: " << interval
+  entry << "[SCHEDULER] ("<<currentTime<<") Mode: " << mode << " Interval: " << interval
         << " Queue: " << queue << " Running: " << running
         << " Completed: " << completed;
   write(entry.str());
