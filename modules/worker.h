@@ -59,7 +59,7 @@ class Worker {
   unsigned int calculateSwappingTime();
 
  public:
-  Worker(int id, Scheduler *sched);
+  Worker(int id, WORKER_PROPERTIES *props, Scheduler *sched);
   void execute();
   bool startWorker();
   bool stopWorker();

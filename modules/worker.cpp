@@ -5,7 +5,7 @@
 
 using namespace std;
 
-Worker::Worker(int worker_id, Scheduler *sched) {
+Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   id = worker_id;
   scheduler = sched;
   state.current = OFFLINE;
@@ -144,7 +144,7 @@ float Worker::getTotalCost() {
   int h = m / 60; // hours;
 
   // rounding up
-  if (h == 0 && m == 0 && s > 0) 
+  if (h == 0 && m == 0 && s >= 0) 
     h++;
 
   if ((m % 60) > 0) 
@@ -244,7 +244,6 @@ void Worker::compute() {
 }
 
 void Worker::swap() {
-  cout << "swap time: " << calculateSwappingTime() << endl;
   if ((currentTime-state.start) == properties.swapping_time-1) {
     setState(IDLE, true);
     logger->workerInt("Swap completed on", getWorkerID());

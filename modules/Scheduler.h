@@ -27,13 +27,6 @@ class Scheduler {
   string scheduler_mode;
   float scheduling_interval;
   unsigned short scheduling_interval_for_clock;
-  float worker_node_speed;
-  float worker_node_memory;
-  float worker_node_swapping_cost;
-  float worker_quantum;
-  float worker_node_startup_time;
-  float worker_node_sched_notif_time;
-  float worker_node_cost;
   int milliseconds; 
   bool isFirstTime;
   
@@ -45,13 +38,9 @@ class Scheduler {
   list<Worker *>::iterator j; //iterator used by runScheduler() function
 
  public:
-
-
-  // default constructor
-  Scheduler();
-  
   // constructor
-  Scheduler(string scheduler_mode, float scheduling_interval);
+  Scheduler(string scheduler_mode, float scheduling_interval, 
+            unsigned short interval_for_clock);
 
   //this function will start a worker and return its worker_id
   unsigned int startWorkerNode();
