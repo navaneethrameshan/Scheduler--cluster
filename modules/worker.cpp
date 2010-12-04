@@ -199,6 +199,7 @@ bool Worker::swapJob() {
   logger->debugInt("Swapping out job", current_job->getJobID());
 
   int instructions_completed = currentTime - state.start;
+  tmp_job_size = current_job->getMemoryConsumption();
   current_job->addInstructionsCompleted(instructions_completed);
   current_job->increaseSwapCount();
   jobs.push_back(tmp_current_job);
@@ -240,14 +241,14 @@ void Worker::compute() {
       removeJob();
     }  
 
-    if ((instructions_completed % 5000) == 0) {
+    if ((instructions_completed % 500) == 0) {
       swapJob();            
     }
   }
 }
 
 void Worker::swap() {
-  if ((currentTime-state.start) == properties.swapping_time-1) {
+  if ((currentTime-state.start) >= calculateSwappingTime()) {
     setState(IDLE, true);
     logger->workerInt("Swap completed on", getWorkerID());
   }
@@ -287,8 +288,8 @@ void Worker::increaseCPUTime() {
 }
 
 unsigned int Worker::calculateSwappingTime() {
-  //  return (current_job->getMemoryConsumption() / 1000) * 
-  return properties.swapping_time-1;
+  int swaptime = tmp_job_size / 1024 * properties.swapping_time;
+  return swaptime;
 }
 
 void Worker::setProperties(WORKER_PROPERTIES *props) {

@@ -43,6 +43,7 @@ class Worker {
   long total_execution_time;
   long total_cpu_time;
   int job_carry_over;
+  int tmp_job_size;
   
   void initialise();
   void compute();
