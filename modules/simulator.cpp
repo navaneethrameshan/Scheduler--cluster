@@ -18,7 +18,7 @@ unsigned long currentTime = 0;
 void Simulator::execute() {
   Job job1[100] [100];
   Task task1[100];
-  SIMULATOR_CONFIG *config = readSimulatorConfig();
+  config = readSimulatorConfig();
   Scheduler *scheduler = new Scheduler(config->scheduler_mode,
                                        config->scheduling_interval,
                                        config->scheduling_interval_for_clock);
@@ -128,6 +128,12 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   int workers_to_create = strtod(values[1].c_str(),NULL);
 
   WORKER_PROPERTIES* properties = new WORKER_PROPERTIES;
+  properties->memory = (int)config->worker_node_memory * 1024;
+  properties->cost_per_hour = config->worker_node_cost;
+  properties->time_to_startup = (int)config->worker_node_startup_time;
+  properties->swapping_time = (int)config->worker_node_swapping_cost;
+  properties->instructions_per_time = (long)config->worker_node_speed;
+  properties->quantum = (int)config->worker_quantum;
 
   for (int i = 1; i <= workers_to_create; i++) {
     Worker *worker = new Worker(i, properties, scheduler);

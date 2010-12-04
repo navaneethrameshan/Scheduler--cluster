@@ -12,12 +12,13 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
-  setDefaultProperties(); // todo: this should be set externally
+  setProperties(props); 
   current_job = NULL;
   total_execution_time = 0;
   total_cpu_time = 0;
 
   logger = Logger::getLogger();
+
 }
 
 void Worker::execute() {
@@ -288,10 +289,11 @@ unsigned int Worker::calculateSwappingTime() {
   return properties.swapping_time-1;
 }
 
-void Worker::setDefaultProperties() {
-  properties.memory = 4096;
-  properties.cost_per_hour = 0.5;
-  properties.time_to_startup = 100;
-  properties.swapping_time = 5; // instructions per gb
-  properties.instructions_per_time = 40; // instructions 
+void Worker::setProperties(WORKER_PROPERTIES *props) {
+  properties.memory = props->memory;
+  properties.cost_per_hour = props->cost_per_hour;
+  properties.time_to_startup = props->time_to_startup;
+  properties.swapping_time = props->swapping_time;
+  properties.instructions_per_time = props->instructions_per_time;
+  properties.quantum = props->quantum;
 }

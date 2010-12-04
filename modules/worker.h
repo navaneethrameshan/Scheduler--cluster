@@ -16,6 +16,7 @@ struct WORKER_PROPERTIES {
   unsigned long time_to_startup;
   unsigned long swapping_time; 
   long instructions_per_time;
+  int quantum;
 };
 
 struct WORKER_STATE {
@@ -49,7 +50,7 @@ class Worker {
   void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
-  void setDefaultProperties();
+  void setProperties(WORKER_PROPERTIES *props);
   void removeJob();
   bool startJob();
   bool hasMoreWork();
