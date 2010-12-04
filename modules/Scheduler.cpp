@@ -3,68 +3,32 @@
 #include <string>
 #include <cstdlib>
 #include <list>
+#include <sstream>
 #include "Scheduler.h"
 
 using namespace std;
 
-int clocktick; 
+int milliseconds; 
 list<Worker *>::iterator j;
 bool isFirstTime;
 
-  //! default constructor - reads the configuration from modules/scheduler.conf
-Scheduler::Scheduler() 
+//! Constructor for scheduler
+Scheduler::Scheduler(string scheduler_mode, float scheduling_interval, 
+                     unsigned short interval_for_clock)
 {
+  log = Logger::getLogger();
   isFirstTime = true;
-  clocktick = 0;
-  string line;
-  ifstream infile;
-  string values[10];
-  int i=0;
-  infile.open ("modules/scheduler.conf");
+  milliseconds = 0;
 
-  while(!infile.eof()) // To get you all the lines.
-    {
-      getline(infile,line); // Saves the line in STRING.
-      if( (line.find('#') != 0) ) //this will ignore the lines having a '#' character 
-	{
-	  values[i] = line;
-	  i++;
-	}
-    }
-  infile.close();
-
-  
-  scheduler_mode = values[0]; //W or S
-  scheduling_interval = strtod(values[1].c_str(), NULL); //0.01 to 1 seconds atoi(strNumber.c_str());
-  worker_node_speed = strtod(values[2].c_str(), NULL); //200 - 400 instructions per second
-  worker_node_memory = strtod(values[3].c_str(), NULL); //2-8 GB
-  worker_node_swapping_cost = strtod(values[4].c_str(), NULL); //2-10 instructions per GB
-  worker_quantum = strtod(values[5].c_str(), NULL); //0.01 to 0.5 seconds
-  worker_node_startup_time = strtod(values[6].c_str(), NULL); //120-600 seconds
-  worker_node_sched_notif_time = strtod(values[7].c_str(), NULL); //1-5 instructions
-  worker_node_cost = strtod(values[8].c_str(), NULL); //in euros/hour
-
-  cout<<"[Scheduler] Starting with following configuration"<<endl
-      <<"[Scheduler] scheduler_mode "<<scheduler_mode<<endl
-      <<"[Scheduler] scheduling_interval "<<scheduling_interval<<endl
-      <<"[Scheduler] worker_node_speed "<<worker_node_speed<<endl
-      <<"[Scheduler] worker_node_memory "<<worker_node_memory<<endl
-      <<"[Scheduler] worker_node_swapping_cost "<<worker_node_swapping_cost<<endl
-      <<"[Scheduler] worker_quantum "<<worker_quantum<<endl
-      <<"[Scheduler] worker_node_startup_time "<<worker_node_startup_time<<endl
-      <<"[Scheduler] worker_node_sched_notif_time "<<worker_node_sched_notif_time<<endl
-      <<"[Scheduler] worker_node_cost "<<worker_node_cost
-      <<endl;
-
-  queuedJobs.clear(); //why do we need this?
- 
-}
-
-//! This constructor has been deprecated. Please use Scheduler()
-Scheduler::Scheduler(string scheduler_mode, float scheduling_interval)
-{
   this->scheduler_mode = scheduler_mode;
   this->scheduling_interval = scheduling_interval;
+  this->scheduling_interval_for_clock = interval_for_clock;
+
+  print();
+  /*cout<<"[Scheduler] Starting with following configuration"<<endl
+      <<"[Scheduler] scheduler_mode "<<scheduler_mode<<endl
+      <<"[Scheduler] scheduling_interval "<<scheduling_interval<<endl;
+  */
   queuedJobs.clear ();
 }
   
@@ -138,24 +102,27 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 */
 
   //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
-  int Scheduler::runScheduler()
+
+
+int Scheduler::runScheduler()
 { 
-
-   clocktick++;
-   /* if ((clocktick)%100 == 0) {
-    cout<<"[Scheduler] clock tick "<<clocktick<<endl;
-    }*/
-
-  if(isFirstTime == true ) {
-  j = workers.begin();
-  isFirstTime = false;
-  }
+  
+      milliseconds++;
+  
+  if((milliseconds)%scheduling_interval_for_clock == 0 || milliseconds == 1) 
+    {
+  
+      if(isFirstTime == true ) {
+	j = workers.begin();
+	isFirstTime = false;
+      }
+      
+      
   
 
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
       {
-	//Nothing to do, so chilling!
-	cout<<"Nothing to do, so chilling!"<<endl;
+	log->decision("Nothing to do, so chilling!");
 	return 0;
       }
     else 
@@ -167,7 +134,7 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
 	      {
 
-		    if( 
+		if( 
 		       (*j)->getState() == COMPUTING 
 		       || (*j)->getState() == IDLE 
 		       || (*j)->getState() == OFFLINE 
@@ -181,7 +148,12 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-			    cout<<"[Scheduler] Job "<<(*i).getJobID()<<" submitted to "<<(*j)->getWorkerID()<<endl;//<<" at clock tick "<<clocktick<<endl; //Outputting
+                            
+                            
+			    stringstream s;
+                            s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
+                            log->decision(s.str());
+
 			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
 			    i--; 
 			    j++;
@@ -191,10 +163,6 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 			      }
 			   
 			  }
-			/*	else
-			  {
-			    continue;
-			    }*/
 			
 		      }
 
@@ -202,13 +170,14 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 
 	  }
       }
+    } //end of clocktick if
 
-    return 0; //returning successful exit everytime (for the time being)
-  }
+  return 0; //returning successful exit everytime (for the time being)
+}
     
 
-  //! A Worker node will notify the Scheduler when a job finishes its execution
-  int Scheduler::notifyJobCompletion(unsigned int job_id)
+//! A Worker node will notify the Scheduler when a job finishes its execution
+int Scheduler::notifyJobCompletion(unsigned int job_id)
   {
     //find the job_id in the runningJobs List
     list<Job >::iterator i;
@@ -230,33 +199,12 @@ bool Scheduler::areAllJobsCompleted() {
 }
 
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
-  void Scheduler::print()
-  {
-    cout<<"Scheduler Mode: "<<scheduler_mode<<endl;
-    cout<<"Scheduling Interval: "<<scheduling_interval<<endl;
-    cout<<"Number of queuedJobs: "<<(int)queuedJobs.size()<<endl;
-    cout<<"Number of runningJobs: "<<(int)runningJobs.size()<<endl;
-    cout<<"Number of completedJobs: "<<(int)completedJobs.size()<<endl;
-    cout<<"Total Number of workers: "<<(int)workers.size()<<endl;
-
-    list<Worker *>::iterator i;
-    int offline_workers_count = 0;
-    int idle_workers_count = 0;
-    int computing_workers_count = 0;
-
-    for(i=workers.begin();i!=workers.end();++i)
-      {
-	if( (*i)->getState() == OFFLINE  )
-	  offline_workers_count++;
-	if( (*i)->getState() == IDLE  )
-	  idle_workers_count++;
-	if( (*i)->getState() == COMPUTING  )
-	  computing_workers_count++;
-      }
-
-  cout<<"-Number of OFFLINE workers: "<<offline_workers_count<<endl;
-  cout<<"-Number of IDLE workers: "<<idle_workers_count<<endl;
-  cout<<"-Number of COMPUTING workers: "<<computing_workers_count<<endl;
-
-  }
+void Scheduler::print()
+{
+  log->status(scheduler_mode, scheduling_interval, 
+              (int)queuedJobs.size(),
+              (int)runningJobs.size(),
+              (int)completedJobs.size());
+  
+}
 

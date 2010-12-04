@@ -1,4 +1,5 @@
 docs/*
-*.o
+graphs/*
 *.log
 cc
+*.o

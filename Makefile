@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -g -Wall -Imodules/
+CFLAGS=-c -g -Wall -Imodules/ -DDEBUG
 LDFLAGS=
 DOCSCONFIG=Doxyfile
 SOURCES=main.cpp $(filter-out $(SRC_EXCEPT), $(wildcard modules/*.cpp))
@@ -21,11 +21,10 @@ docs:
 	doxygen $(DOCSCONFIG)
 
 graphs:
-	./$(EXECUTABLE)
 	mkdir -p graphs/
 	python graphgenerator.py cloud.log
 	gnuplot *.plot
-	mv cloud.log *.plot *.data graphs/
+	mv *.plot *.data graphs/
 
 clean:
 	@rm -f $(EXECUTABLE)

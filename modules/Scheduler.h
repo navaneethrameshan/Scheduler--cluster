@@ -14,40 +14,33 @@
 #include <string>
 #include <cstdlib>
 #include <list>
-//#include<time.h>
+#include <math.h>
 using namespace std;
 
 #include "worker.h"
+#include "logger.h"
 class Worker;
 class Scheduler {
 
  private:
+  Logger* log;
   string scheduler_mode;
   float scheduling_interval;
-  float worker_node_speed;
-  float worker_node_memory;
-  float worker_node_swapping_cost;
-  float worker_quantum;
-  float worker_node_startup_time;
-  float worker_node_sched_notif_time;
-  float worker_node_cost;
-  //time_t currTime;
-
+  unsigned short scheduling_interval_for_clock;
+  int milliseconds; 
+  bool isFirstTime;
+  
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
   list<Job > completedJobs; //Contains jobs which have been completed
   list<Job > runningJobs;   //Contains jobs which are currently in running state
-  
 
-  
+  list<Worker *>::iterator j; //iterator used by runScheduler() function
+
  public:
-
-
-  // default constructor
-  Scheduler();
-  
   // constructor
-  Scheduler(string scheduler_mode, float scheduling_interval);
+  Scheduler(string scheduler_mode, float scheduling_interval, 
+            unsigned short interval_for_clock);
 
   //this function will start a worker and return its worker_id
   unsigned int startWorkerNode();

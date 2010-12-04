@@ -3,28 +3,27 @@
 
 #include "job.h"
 #include "Scheduler.h"
-
-#ifndef DEBUG
-#define DEBUG false
-#endif
+#include "logger.h"
 
 class Scheduler;
-extern long currentTime;
+extern unsigned long currentTime;
 
-enum worker_states { INITIALISING, COMPUTING, FINALISING, IDLE, OFFLINE };
+enum worker_states { INITIALISING, COMPUTING, SWAPPING, FINALISING, IDLE, OFFLINE };
 
 struct WORKER_PROPERTIES {
   int memory;
   float cost_per_hour;
-  long time_to_startup;
-  long swapping_time; 
+  unsigned long time_to_startup;
+  unsigned long swapping_time; 
   long instructions_per_time;
+  int quantum;
 };
 
 struct WORKER_STATE {
   enum worker_states current;
-  long start;
-  long started;
+  unsigned long start;
+  unsigned long started;
+  unsigned long average_response_time;
   long time_spent; //unused
   int available_memory;
   bool accepting_jobs;
@@ -33,6 +32,7 @@ struct WORKER_STATE {
 class Worker {
 
  private:
+  Logger* logger;
   unsigned int id;
   Scheduler *scheduler;
   WORKER_STATE state;
@@ -42,23 +42,27 @@ class Worker {
   std::list<Job> jobs;
   long total_execution_time;
   long total_cpu_time;
-
+  int job_carry_over;
+  int tmp_job_size;
+  
   void initialise();
   void compute();
+  void swap();
   void finalise();
   void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
-  void debug(const char *msg);
-  void setDefaultProperties();
+  void setProperties(WORKER_PROPERTIES *props);
   void removeJob();
   bool startJob();
   bool hasMoreWork();
   void increaseExecutionTime();
   void increaseCPUTime();
+  bool swapJob();
+  unsigned int calculateSwappingTime();
 
  public:
-  Worker(int id, Scheduler *sched);
+  Worker(int id, WORKER_PROPERTIES *props, Scheduler *sched);
   void execute();
   bool startWorker();
   bool stopWorker();
@@ -68,12 +72,11 @@ class Worker {
   bool isAcceptingJobs();
   int getTotalMemory();
   float getCostPerHour();
-  long getTimeToStart();
-  long getSwappingTime();
   long getInstructionsPerTime();
   long getTotalExecutionTime();
   long getTotalCPUTime();
-  long getTotalCost();
+  double getAverageResponseTime();
+  float getTotalCost();
   int getQueuedJobs();
   bool ping();
 

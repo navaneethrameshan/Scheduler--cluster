@@ -4,15 +4,28 @@ Project:
       
 To run: 
       Type 'make'
-      Run with example config './cc example.tasks'
+      Run with example config './cc'
       A log file called 'cloud.log' will be stored in the same directory
 
+Configuration files:
+	modules/input.conf (used for generating tasks and jobs)
+	modules/scheduler.conf (used for scheduler configuration)
+	modules/workers.conf (used for initializing a set of workers)
+
+
 To generate graphs:
-      After a run, type 'make graphs'
+ After a run, type 'make graphs'
       Inside the 'graphs/' folder, the files of interest are *.png
 
 Cleanup:
       Type 'make clean'
+
+Known issues: 
+      - Instructions per unit of time not correct, thus cost value is weird
+      - Single or web mode isn't handled as it is scheduled using round-robin
+
+Dependencies:
+      - Python and gnuplot for generating graphs
 
 Authors: 
       Navaneeth Rameshan
