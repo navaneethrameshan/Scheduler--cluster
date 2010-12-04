@@ -42,7 +42,8 @@ class Worker {
   std::list<Job> jobs;
   long total_execution_time;
   long total_cpu_time;
-
+  int job_carry_over;
+  
   void initialise();
   void compute();
   void swap();

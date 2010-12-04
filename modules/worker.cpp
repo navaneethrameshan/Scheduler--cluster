@@ -16,9 +16,9 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   current_job = NULL;
   total_execution_time = 0;
   total_cpu_time = 0;
+  job_carry_over = 0;
 
   logger = Logger::getLogger();
-
 }
 
 void Worker::execute() {
@@ -170,6 +170,10 @@ bool Worker::startJob() {
     logger->debugInt("Starting job", current_job->getJobID());
     state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
 
+    // carryover from previous job
+    current_job->addInstructionsCompleted(job_carry_over);
+    job_carry_over = 0;
+
     /* Todo:
      * Try to start job, if it exceeds available memory
      * notify scheduler that it is too big. Ask to transfer/cancel.
@@ -222,7 +226,6 @@ void Worker::initialise() {
 
 void Worker::compute() {
   int instructions_completed;
-  int runover;
   if (hasMoreWork()) {
     startJob();
   }  
@@ -231,8 +234,7 @@ void Worker::compute() {
     instructions_completed = (currentTime - state.start) *
       properties.instructions_per_time + current_job->getInstructionsCompleted(); 
 
-    if ((runover = instructions_completed - getTotalComputationTime()) >= 0) {
-      logger->workerInt("Job runover", runover);
+    if ((job_carry_over = instructions_completed - getTotalComputationTime()) >= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
       scheduler->notifyJobCompletion(current_job->getJobID()); 
       removeJob();
