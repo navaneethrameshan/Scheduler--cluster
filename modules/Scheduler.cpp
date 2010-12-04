@@ -5,7 +5,7 @@
 #include <list>
 #include <sstream>
 #include "Scheduler.h"
-
+#include "WorkerStatistics.h"
 using namespace std;
 
 int milliseconds; 
@@ -69,6 +69,7 @@ Scheduler::Scheduler(string scheduler_mode, float scheduling_interval)
 {
   this->scheduler_mode = scheduler_mode;
   this->scheduling_interval = scheduling_interval;
+  milliseconds = 0;
   queuedJobs.clear ();
 }
   
@@ -114,13 +115,19 @@ unsigned int Scheduler::startWorkerNode()
       
   }
 
-  //! If required, the Simulator can submit new worker nodes to Scheduler during the Simulation
+  //! Used by the Simulator to submit pre-initialized worker nodes to Scheduler in the start of the simulation. Also, it initializes a WorkerStatistics object for each Worker node and adds it to the workerStats list. These statistics are used by the scheduler to make scheduling decisions
   int Scheduler::submitWorkers(list<Worker *> workers)
   {
-    	list<Worker *>::iterator i;
+    //TODO: add a created time and last_updated time to the WorkerStatistics class
+       	list<Worker *>::iterator i;
 	for(i=workers.begin(); i!=workers.end();++i)
 	  {
 	this->workers.push_back(*i);
+
+	/*Creating a WorkerStatistics object and pushing it to the workerStats list*/
+	/*TODO:(Confirm if this is the correct way of adding objects to lists */
+	WorkerStatistics *ws = new WorkerStatistics((*i)->getWorkerID(), getCurrentTime());
+	workerStats.push_back(ws);
 	  }
 	return 0;
   }
@@ -141,9 +148,12 @@ unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
 }
 */
 
+long Scheduler::getCurrentTime() 
+{
+  return milliseconds;
+}
+
   //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
-
-
 int Scheduler::runScheduler()
 { 
   
@@ -185,8 +195,14 @@ int Scheduler::runScheduler()
 			list<Job> jobs_to_submit;
 			jobs_to_submit.push_back(*i);	
 
+			
+
 			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 			  {
+			    /* TODO: Confirm if this is the correct way of getting an object by reference  and that the changes will be persistent*/
+			    WorkerStatistics *ws = getWorkerStatsForWorker((*j)->getWorkerID());
+			    ws->incrementSubmittedJobs(getCurrentTime());
+			    /**/
 			    runningJobs.push_back(*i); //adding the job to runningJobs
                             
                             
@@ -216,18 +232,43 @@ int Scheduler::runScheduler()
 }
     
 
+WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
+{
+
+  //TODO: confirm if this is the correct way for returning an object by reference
+  list<WorkerStatistics *>::iterator w;
+  for(w=workerStats.begin();w!=workerStats.end();w++ )
+    {
+      if ( (*w)->getWorkerID() == workerid)
+	{
+	  return *w;
+	}
+    }
+  return NULL;
+}
+			
+
 //! A Worker node will notify the Scheduler when a job finishes its execution
-int Scheduler::notifyJobCompletion(unsigned int job_id)
-  {
-    //find the job_id in the runningJobs List
-    list<Job >::iterator i;
-    for(i=runningJobs.begin();i!=runningJobs.end();++i)
+int Scheduler::notifyJobCompletion(unsigned int job_id, int workerid)
+{
+    
+
+
+  //find the job_id in the runningJobs List
+  list<Job >::iterator i;
+  for(i=runningJobs.begin();i!=runningJobs.end();++i)
       {
 	if( (*i).getJobID() == job_id )
 	  {
 	    completedJobs.push_back(*i); //marking the job as complete
 	    runningJobs.erase(i); //erasing the job from runningJobs 
 	    --i; //Added during testing (Navaneeth and Marcus)	
+
+	    /* TODO: Confirm if this is the correct way of getting an object by reference  and that the changes will be persistent*/
+	    //fetching the WorkerStatistics for workerid and decrementing submitted jobs
+	    WorkerStatistics *ws = getWorkerStatsForWorker(workerid/*TODO: waiting for change from Marcus*/);
+	    ws->decrementSubmittedJobs(getCurrentTime());
+	    /**/
 	  }
       }
     return 0; //returning 0 always (for the time being)
@@ -245,6 +286,8 @@ void Scheduler::print()
               (int)queuedJobs.size(),
               (int)runningJobs.size(),
               (int)completedJobs.size());
+
+  workerStats.front()->print();
   
 }
 

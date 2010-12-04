@@ -19,7 +19,9 @@ using namespace std;
 
 #include "worker.h"
 #include "logger.h"
+#include "WorkerStatistics.h"
 class Worker;
+class WorkerStatistics;
 class Scheduler {
 
  private:
@@ -34,15 +36,17 @@ class Scheduler {
   float worker_node_startup_time;
   float worker_node_sched_notif_time;
   float worker_node_cost;
-  int milliseconds; 
+  long milliseconds; 
   bool isFirstTime;
   
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
   list<Job > completedJobs; //Contains jobs which have been completed
   list<Job > runningJobs;   //Contains jobs which are currently in running state
+  list<WorkerStatistics *> workerStats; //Contains stats for each worker node
 
   list<Worker *>::iterator j; //iterator used by runScheduler() function
+
 
  public:
 
@@ -69,10 +73,16 @@ class Scheduler {
   int runScheduler(); 
     
   // a Worker node will notify the Scheduler when a job finishes its execution
-  int notifyJobCompletion(unsigned int job_id);
+  int notifyJobCompletion(unsigned int job_id, int workerid);
 
   // checks if we can terminate the simulation
   bool areAllJobsCompleted();
+
+  //Get Current Time
+  long getCurrentTime();
+
+  //Returns the WorkerStats object for a specific worker. Returns NULL if not found.
+  WorkerStatistics* getWorkerStatsForWorker(int workerid);
 
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();

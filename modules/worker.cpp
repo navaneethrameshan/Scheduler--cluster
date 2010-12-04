@@ -233,7 +233,7 @@ void Worker::compute() {
     if ((runover = instructions_completed - getTotalComputationTime()) >= 0) {
       logger->workerInt("Job runover", runover);
       logger->workerInt("Removing job", current_job->getJobID());
-      scheduler->notifyJobCompletion(current_job->getJobID()); 
+      scheduler->notifyJobCompletion(current_job->getJobID(), id); 
       removeJob();
     }  
 
