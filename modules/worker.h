@@ -16,6 +16,7 @@ struct WORKER_PROPERTIES {
   unsigned long time_to_startup;
   unsigned long swapping_time; 
   long instructions_per_time;
+  int quantum;
 };
 
 struct WORKER_STATE {
@@ -41,7 +42,9 @@ class Worker {
   std::list<Job> jobs;
   long total_execution_time;
   long total_cpu_time;
-
+  int job_carry_over;
+  int tmp_job_size;
+  
   void initialise();
   void compute();
   void swap();
@@ -49,16 +52,17 @@ class Worker {
   void idle();
   bool setState(enum worker_states newstate, bool accept_jobs);
   long getTotalComputationTime();
-  void setDefaultProperties();
+  void setProperties(WORKER_PROPERTIES *props);
   void removeJob();
   bool startJob();
   bool hasMoreWork();
   void increaseExecutionTime();
   void increaseCPUTime();
   bool swapJob();
+  unsigned int calculateSwappingTime();
 
  public:
-  Worker(int id, Scheduler *sched);
+  Worker(int id, WORKER_PROPERTIES *props, Scheduler *sched);
   void execute();
   bool startWorker();
   bool stopWorker();
@@ -75,6 +79,7 @@ class Worker {
   float getTotalCost();
   int getQueuedJobs();
   bool ping();
+  bool cancelJob(unsigned int jobId);
 
 //added by wasif
 unsigned int getWorkerID();

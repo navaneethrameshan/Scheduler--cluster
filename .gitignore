@@ -2,3 +2,4 @@ docs/*
 graphs/*
 *.log
 cc
+*.o

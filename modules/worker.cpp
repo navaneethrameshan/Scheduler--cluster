@@ -5,17 +5,18 @@
 
 using namespace std;
 
-Worker::Worker(int worker_id, Scheduler *sched) {
+Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   id = worker_id;
   scheduler = sched;
   state.current = OFFLINE;
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
-  setDefaultProperties(); // todo: this should be set externally
+  setProperties(props); 
   current_job = NULL;
   total_execution_time = 0;
   total_cpu_time = 0;
+  job_carry_over = 0;
 
   logger = Logger::getLogger();
 }
@@ -144,7 +145,7 @@ float Worker::getTotalCost() {
   int h = m / 60; // hours;
 
   // rounding up
-  if (h == 0 && m == 0 && s > 0) 
+  if (h == 0 && m == 0 && s >= 0) 
     h++;
 
   if ((m % 60) > 0) 
@@ -157,7 +158,25 @@ int Worker::getQueuedJobs() {
   return (int)jobs.size();
 }
 
-/* Private methods */
+bool Worker::cancelJob(unsigned int jobId) {
+  if (current_job->getJobID() == jobId) {
+    removeJob();
+    return true;
+  }
+
+  list<Job>::iterator job;
+  for (job = jobs.begin(); job != jobs.end(); ++job) {
+    if ((*job).getJobID() == jobId) {
+      jobs.erase(job);
+      job--;
+      return true;
+    }
+  }
+
+  return false; // no such job id on this worker
+}
+
+/* ============= Private methods ============== */
 bool Worker::startJob() {
   if (current_job == NULL) {
     list<Job>::iterator i;
@@ -168,6 +187,10 @@ bool Worker::startJob() {
 
     logger->debugInt("Starting job", current_job->getJobID());
     state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
+
+    // carryover from previous job
+    current_job->addInstructionsCompleted(job_carry_over);
+    job_carry_over = 0;
 
     /* Todo:
      * Try to start job, if it exceeds available memory
@@ -194,6 +217,7 @@ bool Worker::swapJob() {
   logger->debugInt("Swapping out job", current_job->getJobID());
 
   int instructions_completed = currentTime - state.start;
+  tmp_job_size = current_job->getMemoryConsumption();
   current_job->addInstructionsCompleted(instructions_completed);
   current_job->increaseSwapCount();
   jobs.push_back(tmp_current_job);
@@ -221,7 +245,6 @@ void Worker::initialise() {
 
 void Worker::compute() {
   int instructions_completed;
-  int runover;
   if (hasMoreWork()) {
     startJob();
   }  
@@ -230,21 +253,20 @@ void Worker::compute() {
     instructions_completed = (currentTime - state.start) *
       properties.instructions_per_time + current_job->getInstructionsCompleted(); 
 
-    if ((runover = instructions_completed - getTotalComputationTime()) >= 0) {
-      logger->workerInt("Job runover", runover);
+    if ((job_carry_over = instructions_completed - getTotalComputationTime()) >= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
       scheduler->notifyJobCompletion(current_job->getJobID(), id); 
       removeJob();
     }  
 
-    if ((instructions_completed % 5000) == 0) {
+    if ((instructions_completed % 500) == 0) {
       swapJob();            
     }
   }
 }
 
 void Worker::swap() {
-  if ((currentTime-state.start) == properties.swapping_time-1) {
+  if ((currentTime-state.start) >= calculateSwappingTime()) {
     setState(IDLE, true);
     logger->workerInt("Swap completed on", getWorkerID());
   }
@@ -283,10 +305,16 @@ void Worker::increaseCPUTime() {
   total_cpu_time++;
 }
 
-void Worker::setDefaultProperties() {
-  properties.memory = 4096;
-  properties.cost_per_hour = 0.5;
-  properties.time_to_startup = 100;
-  properties.swapping_time = 5; // instructions per gb
-  properties.instructions_per_time = 40; // instructions 
+unsigned int Worker::calculateSwappingTime() {
+  int swaptime = tmp_job_size / 1024 * properties.swapping_time;
+  return swaptime;
+}
+
+void Worker::setProperties(WORKER_PROPERTIES *props) {
+  properties.memory = props->memory;
+  properties.cost_per_hour = props->cost_per_hour;
+  properties.time_to_startup = props->time_to_startup;
+  properties.swapping_time = props->swapping_time;
+  properties.instructions_per_time = props->instructions_per_time;
+  properties.quantum = props->quantum;
 }
