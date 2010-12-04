@@ -158,7 +158,25 @@ int Worker::getQueuedJobs() {
   return (int)jobs.size();
 }
 
-/* Private methods */
+bool Worker::cancelJob(unsigned int jobId) {
+  if (current_job->getJobID() == jobId) {
+    removeJob();
+    return true;
+  }
+
+  list<Job>::iterator job;
+  for (job = jobs.begin(); job != jobs.end(); ++job) {
+    if ((*job).getJobID() == jobId) {
+      jobs.erase(job);
+      job--;
+      return true;
+    }
+  }
+
+  return false; // no such job id on this worker
+}
+
+/* ============= Private methods ============== */
 bool Worker::startJob() {
   if (current_job == NULL) {
     list<Job>::iterator i;

@@ -79,6 +79,7 @@ class Worker {
   float getTotalCost();
   int getQueuedJobs();
   bool ping();
+  bool cancelJob(unsigned int jobId);
 
 //added by wasif
 unsigned int getWorkerID();
