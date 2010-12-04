@@ -244,6 +244,7 @@ void Worker::compute() {
 }
 
 void Worker::swap() {
+  cout << "swap time: " << calculateSwappingTime() << endl;
   if ((currentTime-state.start) == properties.swapping_time-1) {
     setState(IDLE, true);
     logger->workerInt("Swap completed on", getWorkerID());
@@ -281,6 +282,11 @@ void Worker::increaseExecutionTime() {
 
 void Worker::increaseCPUTime() {
   total_cpu_time++;
+}
+
+unsigned int Worker::calculateSwappingTime() {
+  //  return (current_job->getMemoryConsumption() / 1000) * 
+  return properties.swapping_time-1;
 }
 
 void Worker::setDefaultProperties() {

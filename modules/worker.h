@@ -56,6 +56,7 @@ class Worker {
   void increaseExecutionTime();
   void increaseCPUTime();
   bool swapJob();
+  unsigned int calculateSwappingTime();
 
  public:
   Worker(int id, Scheduler *sched);
