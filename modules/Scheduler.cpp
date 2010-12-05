@@ -265,7 +265,8 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
       ws->setAvailableMemory(availmem, currenttime);
       
       s<<"[WORKERSTATS]\t(time:"<<getCurrentTime()<<")"
-	<<"\twid:"<<ws->getNumberOfQueuedJobs()
+       <<"\twid:"<<wid
+       <<"\tqjobs:"<<ws->getNumberOfQueuedJobs()
 	<<"\tavgresptime:"<<ws->getAverageResponseTime()
 	<<"\tcost:"<<ws->getWorkerCostTillNow()
 	<<"\tavailmem:"<<ws->getAvailableMemory()
