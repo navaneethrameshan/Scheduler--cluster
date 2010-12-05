@@ -184,6 +184,7 @@ int Scheduler::runScheduler()
   //doing initializations and stuff
   doInitAndOtherStuff();
 
+  //checking if its time to do some scheduling!
   if(isScheduleTime()) {
     
     //running the roundrobin scheduler
@@ -273,7 +274,9 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 	<<endl;
       
     }
-  cout<<s.str()<<endl;
+
+  //DEBUG statement
+  cout<<s.str()<<endl; //TODO: should be sent to logger instead
   
 }
 
