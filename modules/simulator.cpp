@@ -85,7 +85,7 @@ void Simulator::execute() {
     currentTime++;
   }
   scheduler->print();   
-  scheduler->printSummary();
+  //scheduler->printSummary();
   cleanUp();
 }
 

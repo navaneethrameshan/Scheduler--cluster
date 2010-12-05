@@ -187,8 +187,18 @@ int Scheduler::runScheduler()
   //checking if its time to do some scheduling!
   if(isScheduleTime()) {
     
-    //running the roundrobin scheduler
-    runRoundRobinScheduler();
+
+    if(scheduler_mode == "S")
+      {
+	//running the roundrobin scheduler
+	runRoundRobinScheduler();
+      }
+    
+    else if(scheduler_mode == "W")
+      {
+	//running the roundrobin scheduler
+	runRoundRobinScheduler();
+      }
     
     //gathering statistics of all workers
     gatherStatisticsFromAllWorkers();
@@ -220,9 +230,6 @@ WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
 //! A Worker node will notify the Scheduler when a job finishes its execution
 int Scheduler::notifyJobCompletion(unsigned int job_id, int workerid)
 {
-    
-
-
   //find the job_id in the runningJobs List
   list<Job >::iterator i;
   for(i=runningJobs.begin();i!=runningJobs.end();++i)
@@ -231,13 +238,11 @@ int Scheduler::notifyJobCompletion(unsigned int job_id, int workerid)
 	  {
 	    completedJobs.push_back(*i); //marking the job as complete
 	    runningJobs.erase(i); //erasing the job from runningJobs 
-	    --i; //Added during testing (Navaneeth and Marcus)	
-
-	    /* TODO: Confirm if this is the correct way of getting an object by reference  and that the changes will be persistent*/
-	    //fetching the WorkerStatistics for workerid and decrementing submitted jobs
-	    WorkerStatistics *ws = getWorkerStatsForWorker(workerid/*TODO: waiting for change from Marcus*/);
+	    --i; 
+	    
+	    WorkerStatistics *ws = getWorkerStatsForWorker(workerid);
 	    ws->decrementSubmittedJobs(getCurrentTime());
-	    /**/
+
 	  }
       }
     return 0; //returning 0 always (for the time being)
@@ -271,12 +276,16 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 	<<"\tavgresptime:"<<ws->getAverageResponseTime()
 	<<"\tcost:"<<ws->getWorkerCostTillNow()
 	<<"\tavailmem:"<<ws->getAvailableMemory()
+       <<"\tsubmittedjobs:"<<ws->getNumberOfSubmittedJobs()
 	<<endl;
       
     }
 
+  //    if(getCurrentTime()%100 == 0)
+  //  {
   //DEBUG statement
   cout<<s.str()<<endl; //TODO: should be sent to logger instead
+  //  }
   
 }
 
