@@ -16,8 +16,8 @@ unsigned long currentTime = 0;
 
 
 void Simulator::execute() {
-  Job job1[100] [100];
-  Task task1[100];
+  Job job1[1000] [100];
+  Task task1[1000];
   config = readSimulatorConfig();
   Scheduler *scheduler = new Scheduler(config->scheduler_mode,
                                        config->scheduling_interval,
@@ -57,6 +57,7 @@ void Simulator::execute() {
       break;
 
     // run task generator
+    if (currentTime % 1000 == 0) {
     if(task_generator_stop == false) {
       start_pos = task_generator.add_job_list(&(*current_task), 
                                               current_task->job_rate, 
@@ -68,6 +69,7 @@ void Simulator::execute() {
 
       if(current_task==tasklist.end())
         task_generator_stop = true;
+    }
     }
 
     runWorkers();
