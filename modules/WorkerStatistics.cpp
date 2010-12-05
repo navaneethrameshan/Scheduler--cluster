@@ -182,7 +182,7 @@ void WorkerStatistics::setNumberOfSubmittedJobs(int numsubmittedjobs, long curre
   // outputs the current state of the object 
 void WorkerStatistics::print()
   {
-    cout<< 
+        cout<< 
       "worker_id:"<<worker_id<<"\t"<<
       "average_response_time:"<<average_response_time<<"\t"<<
       "available_memory:"<<available_memory<<"\t"<<
@@ -194,6 +194,8 @@ void WorkerStatistics::print()
       "created_time:"<<created_time<<"\t"<<
       "last_updated:"<<last_updated<<"\t"<<
         endl ;
+    
+    //  cout<<"Ola"<<endl;
   }
 //};
 

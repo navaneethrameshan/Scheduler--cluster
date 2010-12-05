@@ -73,6 +73,20 @@ class Scheduler {
   //Returns the WorkerStats object for a specific worker. Returns NULL if not found.
   WorkerStatistics* getWorkerStatsForWorker(int workerid);
 
+  //runs the Round Robin Scheduler
+  void runRoundRobinScheduler();
+
+  //Do Initializations and stuff - basically whatver stuff that needs to be done before doing actual scheduling
+  void doInitAndOtherStuff();
+  
+  //gathers statistics from all worker nodes
+  void gatherStatisticsFromAllWorkers();
+  
+  //returns true if its time to schedule
+  bool isScheduleTime();
+
+  //prints the summary of total jobs processed
+  void printSummary();
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
 };

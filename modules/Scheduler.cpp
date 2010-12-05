@@ -88,48 +88,19 @@ unsigned int Scheduler::startWorkerNode()
 	return 0;
   }
 
-/*
-unsigned int getNumberOfUsableWorkerNodes(List<Worker *> workers)
-{
-  list<Worker *>::iterator i;
-  for(i=workers.begin();i!=workers.end(),++i)
-    {
-      if( (*i)->getState() == worker_states.OFFLINE || (*i)->getState() == worker_states.COMPUTING ||(*i)->getState() == worker_states.IDLE )
-	{
-	  num_of_usable_worker_nodes++;
-	}
-    }
-  //Outputting
-  count<<"Number of Usable Worker Nodes: "<<num_of_usable_worker_nodes<<endl;
-}
-*/
-
 long Scheduler::getCurrentTime() 
 {
   return milliseconds;
 }
 
-  //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
-int Scheduler::runScheduler()
-{ 
-  
-      milliseconds++;
-  
-  if((milliseconds)%scheduling_interval_for_clock == 0 || milliseconds == 1) 
-    {
-  
-      if(isFirstTime == true ) {
-	j = workers.begin();
-	isFirstTime = false;
-      }
-      
-      
+void Scheduler::runRoundRobinScheduler()
+{
   
 
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
       {
 	log->decision("Nothing to do, so chilling!");
-	return 0;
+	return;
       }
     else 
       {
@@ -160,8 +131,7 @@ int Scheduler::runScheduler()
 			    ws->incrementSubmittedJobs(getCurrentTime());
 			    /**/
 			    runningJobs.push_back(*i); //adding the job to runningJobs
-                            
-                            
+                                                     
 			    stringstream s;
                             s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
                             log->decision(s.str());
@@ -182,10 +152,52 @@ int Scheduler::runScheduler()
 
 	  }
       }
-    } //end of clocktick if
+ 
 
+}
+
+//! Do Initializations and stuff - basically whatver stuff that needs to be done before doing actual scheduling
+void Scheduler::doInitAndOtherStuff()
+{
+  //incrementing time
+  milliseconds++;
+  
+  if((milliseconds)%scheduling_interval_for_clock == 0 || milliseconds == 1) 
+    {
+      
+      if(isFirstTime == true ) {
+	j = workers.begin();
+	isFirstTime = false;
+      }
+
+    }
+}
+
+bool Scheduler::isScheduleTime() {
+  return (  ((milliseconds)%scheduling_interval_for_clock == 0) || (milliseconds == 1)   );
+}
+
+  //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
+int Scheduler::runScheduler()
+{ 
+  
+  //doing initializations and stuff
+  doInitAndOtherStuff();
+
+  if(isScheduleTime()) {
+    
+    //running the roundrobin scheduler
+    runRoundRobinScheduler();
+    
+    //gathering statistics of all workers
+    gatherStatisticsFromAllWorkers();
+    
+  }
+  
   return 0; //returning successful exit everytime (for the time being)
 }
+
+
     
 
 WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
@@ -231,6 +243,39 @@ int Scheduler::notifyJobCompletion(unsigned int job_id, int workerid)
 
   }
 
+void Scheduler::gatherStatisticsFromAllWorkers() {
+
+  long currenttime = getCurrentTime();
+  stringstream s;
+ 
+  list<Worker* >::iterator i;
+  for(i = workers.begin(); i != workers.end(); i++)
+    {
+
+      int wid = (*i)->getWorkerID();
+      int qjobs = (*i)->getQueuedJobs();
+      double avgresptime = (*i)->getAverageResponseTime();
+      float cost = (*i)->getTotalCost();
+      int availmem = (*i)->getAvailableMemory();
+      
+      WorkerStatistics *ws = getWorkerStatsForWorker(wid);
+      ws->setNumberOfQueuedJobs(qjobs, currenttime);
+      ws->setAverageResponseTime(avgresptime, currenttime);
+      ws->setWorkerCostTillNow(cost, currenttime);
+      ws->setAvailableMemory(availmem, currenttime);
+      
+      s<<"[WORKERSTATS]\t(time:"<<getCurrentTime()<<")"
+	<<"\twid:"<<ws->getNumberOfQueuedJobs()
+	<<"\tavgresptime:"<<ws->getAverageResponseTime()
+	<<"\tcost:"<<ws->getWorkerCostTillNow()
+	<<"\tavailmem:"<<ws->getAvailableMemory()
+	<<endl;
+      
+    }
+  cout<<s.str()<<endl;
+  
+}
+
 bool Scheduler::areAllJobsCompleted() {
   return ((queuedJobs.size() + runningJobs.size()) == 0);
 }
@@ -243,7 +288,20 @@ void Scheduler::print()
               (int)runningJobs.size(),
               (int)completedJobs.size());
 
-  //  workerStats.front()->print();
+  /*  if(workerStats.front() != NULL)
+    workerStats.front()->print();
+  if(workerStats.back() != NULL)
+    workerStats.back()->print();
+  */
   
 }
 
+void Scheduler::printSummary()
+{
+  stringstream s;
+  s<<" [SUMMARY] (time:"<<getCurrentTime()<<")"
+   <<"\tTotal Jobs Completed: "<<completedJobs.size()
+   <<""
+   <<endl;
+  log->decision(s.str());
+}
