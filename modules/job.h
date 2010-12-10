@@ -24,11 +24,17 @@ class Job {
   // added by archie
   int getNumberOfInstructions();
   int getMemoryConsumption();
-  bool addInstructionsCompleted(int instructions);
+  int addInstructionsCompleted(int instructions);
   int getInstructionsCompleted();
   int increaseSwapCount();
   unsigned long getStartedTime();
   void setStartedTime();
 };
+
+static inline bool 
+operator == (const Job &a, const Job &b) {
+  return (a.job_id == b.job_id);
+}
+
 
 #endif /* __WORKER__ */

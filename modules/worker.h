@@ -39,11 +39,13 @@ class Worker {
   WORKER_PROPERTIES properties;
   Job *current_job;
   Job tmp_current_job;
+  std::list<Job> ram;
   std::list<Job> jobs;
   long total_execution_time;
   long total_cpu_time;
   int job_carry_over;
   int tmp_job_size;
+  unsigned int time_to_swap;
   
   void initialise();
   void compute();
@@ -55,11 +57,16 @@ class Worker {
   void setProperties(WORKER_PROPERTIES *props);
   void removeJob();
   bool startJob();
+  bool moveLargestJobFromMemoryToHdd();
+  bool moveJobToMemory();
+  bool activateJob();
   bool hasMoreWork();
   void increaseExecutionTime();
   void increaseCPUTime();
   bool swapJob();
-  unsigned int calculateSwappingTime();
+  bool swapInMemory();
+  unsigned int calculateSwappingTime(Job *job);
+  void debugJobs();
 
  public:
   Worker(int id, WORKER_PROPERTIES *props, Scheduler *sched);

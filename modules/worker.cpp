@@ -12,7 +12,8 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
-  setProperties(props); 
+  setProperties(props);
+  state.available_memory = properties.memory; 
   current_job = NULL;
   total_execution_time = 0;
   total_cpu_time = 0;
@@ -22,6 +23,7 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
 }
 
 void Worker::execute() {
+  logger->debugInt("State is", state.current);
   switch (state.current) {
   case INITIALISING: 
     increaseExecutionTime();
@@ -122,16 +124,22 @@ long Worker::getTotalCPUTime() {
 }
 
 double Worker::getAverageResponseTime() {
-  double avg = 0;
+  double avg = 1;
   int number_of_jobs = 0;
   
   list<Job>::iterator job;
   for (job = jobs.begin(); job != jobs.end(); ++job) {
-    avg += currentTime - (*job).getStartedTime();
+    avg += (currentTime - (*job).getStartedTime());
+    number_of_jobs++;
+  }
+
+  for (job = ram.begin(); job != ram.end(); ++job) {
+    avg += (currentTime - (*job).getStartedTime());
+    number_of_jobs++;
   }
 
   if (current_job != NULL) {
-    avg += currentTime - current_job->getStartedTime();
+    avg += (currentTime - current_job->getStartedTime());
     number_of_jobs++;
   }
 
@@ -177,31 +185,105 @@ bool Worker::cancelJob(unsigned int jobId) {
 }
 
 /* ============= Private methods ============== */
-bool Worker::startJob() {
-  if (current_job == NULL) {
-    list<Job>::iterator i;
-    i = jobs.begin();
-    tmp_current_job = *i;
-    current_job = &tmp_current_job;
-    jobs.pop_front();
+/* 
+first swap between all jobs in memory
+if there are elements in the hdd, try to start job
+if start job failed, move largest job in mem to hdd (pay swapping) 
+loop 
+  retry start job, if failed move largest job in mem to hdd (pay swapping)
 
-    logger->debugInt("Starting job", current_job->getJobID());
-    state.available_memory = getTotalMemory() - current_job->getMemoryConsumption();
+ */
 
-    // carryover from previous job
-    current_job->addInstructionsCompleted(job_carry_over);
-    job_carry_over = 0;
-
-    /* Todo:
-     * Try to start job, if it exceeds available memory
-     * notify scheduler that it is too big. Ask to transfer/cancel.
-     */
-
-    setState(COMPUTING, true);
-    return true;
+void Worker::debugJobs() {
+  list<Job>::iterator job;
+  for (job = ram.begin(); job != ram.end(); ++job) {
+    cout << "In ram: " << (*job).getJobID() << endl;
   }
 
+  for (job = jobs.begin(); job != jobs.end(); ++job) {
+    cout << "In hdd: " << (*job).getJobID() << endl;
+  }
+  
+}
+
+bool Worker::startJob() {
+  // test start jobs and move as many as possible into memory
+  bool result;
+
+  while (moveJobToMemory());
+
+  debugJobs();
+  
+  if (activateJob()) {
+    result = true;
+    logger->debugInt("Activated job", current_job->getJobID());
+  }
+  return result;
+}
+
+bool Worker::moveLargestJobFromMemoryToHdd() {
+  if ((int)ram.size() == 0) 
+    return false;
+
+  list<Job>::iterator largest = ram.begin();
+  list<Job>::iterator job;
+  for (job = ram.begin(); job != ram.end(); ++job) {
+    if ((*job).getMemoryConsumption() > (*largest).getMemoryConsumption())
+      largest = job;
+  }
+
+  jobs.push_back(*largest);
+  ram.erase(largest);
+  return true;
+}
+
+bool Worker::moveJobToMemory() {
+  if ((int)jobs.size() > 0) {
+    logger->debugInt("MEMORY", state.available_memory);
+    if ((state.available_memory - jobs.front().getMemoryConsumption()) >= 0) {
+      logger->debug("ADDING JOB TO MEM since it fits... cheating a little");
+      list<Job>::iterator i;
+      i = jobs.begin();
+      ram.push_back(*i);
+      jobs.pop_front();
+      logger->debugInt("added job", ram.front().getMemoryConsumption());
+      state.available_memory -= jobs.front().getMemoryConsumption();
+      // add swap cost
+      return true;
+    } 
+  }
   return false;
+}
+
+bool Worker::activateJob() {
+  if (current_job != NULL)
+    return false;
+
+  // take from mem queue, although it is still considered being in memory
+  list<Job>::iterator i;
+  i = ram.begin();
+  tmp_current_job = *i;
+  current_job = &tmp_current_job;
+  ram.pop_front();
+  
+  logger->debugInt("Carry over is: ", job_carry_over);
+  //job_carry_over = current_job->addInstructionsCompleted(job_carry_over);
+  //job_carry_over = 0;
+  time_to_swap = 0;
+
+  //  logger->debugInt("Current job
+
+  setState(COMPUTING, true);
+  return true;
+}
+
+bool Worker::swapInMemory() {
+  // push back current job
+  tmp_job_size = current_job->getMemoryConsumption();
+  current_job->increaseSwapCount();
+  ram.push_back(tmp_current_job);
+  current_job = NULL;
+  return true;
 }
 
 bool Worker::swapJob() {
@@ -212,62 +294,73 @@ bool Worker::swapJob() {
     return false; // no job to swap out
 
   if ((int)jobs.size() == 0) 
-    return false; // no jobs to swap in
+    return swapInMemory(); 
 
-  logger->debugInt("Swapping out job", current_job->getJobID());
-
-  int instructions_completed = currentTime - state.start;
+  state.available_memory += current_job->getMemoryConsumption();
   tmp_job_size = current_job->getMemoryConsumption();
-  current_job->addInstructionsCompleted(instructions_completed);
   current_job->increaseSwapCount();
+  time_to_swap = calculateSwappingTime(current_job);
   jobs.push_back(tmp_current_job);
   current_job = NULL;
-
+  
   setState(SWAPPING, false);
   
   return true;
 }
 
 void Worker::removeJob() {
+  state.available_memory += current_job->getMemoryConsumption();
+  //ram.remove(tmp_current_job);
   current_job = NULL;
-  state.available_memory = getTotalMemory();
+  job_carry_over = 0;
   setState(IDLE, true);
 }
 
 void Worker::initialise() {
   if ((currentTime-state.start) == properties.time_to_startup) {
-    logger->debugInt("Worker with ID started", getWorkerID());
+    logger->workerInt("Started Worker (ID)", getWorkerID());
     setState(IDLE, true);
-    if (hasMoreWork())
+    if (hasMoreWork()) {
       startJob();
+    }
   }
 }
 
 void Worker::compute() {
-  int instructions_completed;
   if (hasMoreWork()) {
     startJob();
   }  
 
   if (current_job != NULL) {
-    instructions_completed = (currentTime - state.start) *
-      properties.instructions_per_time + current_job->getInstructionsCompleted(); 
+    logger->debugInt("IN COMPUTE", current_job->getJobID());
+    logger->debugInt("IN COMPUTE compl", current_job->getInstructionsCompleted());
+    logger->debugInt("IN COMPUTE instr", properties.instructions_per_time);
+    logger->debugInt("IN COMPUTE tot", current_job->getNumberOfInstructions());
 
-    if ((job_carry_over = instructions_completed - getTotalComputationTime()) >= 0) {
+    job_carry_over = 
+      current_job->addInstructionsCompleted(properties.instructions_per_time + 
+                                            job_carry_over);
+    logger->debugInt("IN COMPUTE carry_over", job_carry_over);
+
+    if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
       scheduler->notifyJobCompletion(current_job->getJobID()); 
       removeJob();
-    }  
+      // possibly return here
+    }
 
-    if ((instructions_completed % 500) == 0) {
+    if ((currentTime % 5) == 0) {
+      logger->debug("TIME FOR SWAPPING");
       swapJob();            
     }
   }
 }
 
 void Worker::swap() {
-  if ((currentTime-state.start) >= calculateSwappingTime()) {
-    setState(IDLE, true);
+  logger->debugInt("Swapping time is", time_to_swap);
+  logger->debugInt("State.start", state.start);
+  if ((currentTime-state.start) == time_to_swap) {
+    startJob();
     logger->workerInt("Swap completed on", getWorkerID());
   }
 }
@@ -283,13 +376,15 @@ void Worker::idle() {
 }
 
 bool Worker::hasMoreWork() {
-  return ((int)jobs.size() > 0);
+  return ((int) ram.size() + (int)jobs.size() > 0);
 }
 
 bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
+  logger->debugInt("CURRENT STATE is", state.current);
   state.current = newstate;
   state.start = currentTime;
   state.accepting_jobs = accept_jobs;
+  logger->debugInt("CHANGED STATE to", state.current);
   return true;
 }
 
@@ -305,9 +400,12 @@ void Worker::increaseCPUTime() {
   total_cpu_time++;
 }
 
-unsigned int Worker::calculateSwappingTime() {
-  int swaptime = tmp_job_size / 1024 * properties.swapping_time;
-  return swaptime;
+unsigned int Worker::calculateSwappingTime(Job *job) {
+  unsigned int swaptime = job->getMemoryConsumption() * 
+    properties.swapping_time;
+  if (swaptime % 1024 > 0)
+    swaptime++;
+  return swaptime / 1024;
 }
 
 void Worker::setProperties(WORKER_PROPERTIES *props) {

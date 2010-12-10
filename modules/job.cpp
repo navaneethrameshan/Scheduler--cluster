@@ -38,13 +38,13 @@ int Job::getMemoryConsumption() {
   return mem_size;
 }
 
-bool Job::addInstructionsCompleted(int instructions) {
-  if (instructions_completed+instructions >= no_inst)
-    return false;
-
+int Job::addInstructionsCompleted(int instructions) {
   instructions_completed += instructions;
+  cout << "INSTRUCTIONS COMPLETED: " << instructions_completed << endl;
+  if (instructions_completed > no_inst) 
+    return instructions_completed-no_inst;
 
-  return true;
+  return 0;
 }
 
 int Job::getInstructionsCompleted() {
@@ -62,3 +62,4 @@ void Job::setStartedTime() {
 unsigned long Job::getStartedTime() {
   return started;
 }
+

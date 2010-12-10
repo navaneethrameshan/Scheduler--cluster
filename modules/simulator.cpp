@@ -75,7 +75,7 @@ void Simulator::execute() {
     scheduler->runScheduler();
     //scheduler->print();   //just added for debugging - can be removed
     
-    if ((currentTime % 500) == 0) {
+    if ((currentTime % 10) == 0) {
       logRunningAverage();
       scheduler->print();
     }
@@ -101,8 +101,10 @@ bool Simulator::cleanUp() {
 void Simulator::runWorkers() {
   list<Worker *>::iterator worker;
 
-  for (worker = workers.begin(); worker != workers.end(); ++worker)
+  for (worker = workers.begin(); worker != workers.end(); ++worker) {
+    //    logger->debugInt("Now executing worker", (*worker)->getWorkerID());
     (*worker)->execute();
+  }
 }
 
 bool Simulator::readWorkers(Scheduler *scheduler) {
