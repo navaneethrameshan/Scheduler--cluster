@@ -40,7 +40,6 @@ int Job::getMemoryConsumption() {
 
 int Job::addInstructionsCompleted(int instructions) {
   instructions_completed += instructions;
-  cout << "INSTRUCTIONS COMPLETED: " << instructions_completed << endl;
   if (instructions_completed > no_inst) 
     return instructions_completed-no_inst;
 

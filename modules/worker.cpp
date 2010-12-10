@@ -24,6 +24,7 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
 
 void Worker::execute() {
   logger->debugInt("State is", state.current);
+
   switch (state.current) {
   case INITIALISING: 
     increaseExecutionTime();
@@ -266,12 +267,9 @@ bool Worker::activateJob() {
   current_job = &tmp_current_job;
   ram.pop_front();
   
-  logger->debugInt("Carry over is: ", job_carry_over);
-  //job_carry_over = current_job->addInstructionsCompleted(job_carry_over);
-  //job_carry_over = 0;
   time_to_swap = 0;
 
-  //  logger->debugInt("Current job
+  logger->debugInt("Time to swap", calculateSwappingTime(current_job));
 
   setState(COMPUTING, true);
   return true;
@@ -349,6 +347,7 @@ void Worker::compute() {
       // possibly return here
     }
 
+    logger->debugInt("CURRENTTIME", currentTime);
     if ((currentTime % 5) == 0) {
       logger->debug("TIME FOR SWAPPING");
       swapJob();            
