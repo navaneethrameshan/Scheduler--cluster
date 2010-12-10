@@ -25,7 +25,7 @@ void Simulator::execute() {
   //modified Nov-8
   int total_input = 0;
   string strings;
-  fstream file("modules/input.conf");
+  fstream file("config/input.conf");
   getline(file, strings);
   
   while (file){

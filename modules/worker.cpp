@@ -23,8 +23,6 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
 }
 
 void Worker::execute() {
-  logger->debugInt("State is", state.current);
-
   switch (state.current) {
   case INITIALISING: 
     increaseExecutionTime();
@@ -186,15 +184,6 @@ bool Worker::cancelJob(unsigned int jobId) {
 }
 
 /* ============= Private methods ============== */
-/* 
-first swap between all jobs in memory
-if there are elements in the hdd, try to start job
-if start job failed, move largest job in mem to hdd (pay swapping) 
-loop 
-  retry start job, if failed move largest job in mem to hdd (pay swapping)
-
- */
-
 void Worker::debugJobs() {
   list<Job>::iterator job;
   for (job = ram.begin(); job != ram.end(); ++job) {
@@ -208,16 +197,13 @@ void Worker::debugJobs() {
 }
 
 bool Worker::startJob() {
-  // test start jobs and move as many as possible into memory
   bool result;
 
   while (moveJobToMemory());
-
-  debugJobs();
   
   if (activateJob()) {
     result = true;
-    logger->debugInt("Activated job", current_job->getJobID());
+    logger->workerInt("Activated job", current_job->getJobID());
   }
   return result;
 }
@@ -240,14 +226,11 @@ bool Worker::moveLargestJobFromMemoryToHdd() {
 
 bool Worker::moveJobToMemory() {
   if ((int)jobs.size() > 0) {
-    logger->debugInt("MEMORY", state.available_memory);
     if ((state.available_memory - jobs.front().getMemoryConsumption()) >= 0) {
-      logger->debug("ADDING JOB TO MEM since it fits... cheating a little");
       list<Job>::iterator i;
       i = jobs.begin();
       ram.push_back(*i);
       jobs.pop_front();
-      logger->debugInt("added job", ram.front().getMemoryConsumption());
       state.available_memory -= jobs.front().getMemoryConsumption();
       // add swap cost
       return true;
@@ -267,9 +250,7 @@ bool Worker::activateJob() {
   current_job = &tmp_current_job;
   ram.pop_front();
   
-  time_to_swap = 0;
-
-  logger->debugInt("Time to swap", calculateSwappingTime(current_job));
+  time_to_swap = 0; 
 
   setState(COMPUTING, true);
   return true;
@@ -301,14 +282,13 @@ bool Worker::swapJob() {
   jobs.push_back(tmp_current_job);
   current_job = NULL;
   
-  setState(SWAPPING, false);
+  setState(SWAPPING, true);
   
   return true;
 }
 
 void Worker::removeJob() {
   state.available_memory += current_job->getMemoryConsumption();
-  //ram.remove(tmp_current_job);
   current_job = NULL;
   job_carry_over = 0;
   setState(IDLE, true);
@@ -330,15 +310,9 @@ void Worker::compute() {
   }  
 
   if (current_job != NULL) {
-    logger->debugInt("IN COMPUTE", current_job->getJobID());
-    logger->debugInt("IN COMPUTE compl", current_job->getInstructionsCompleted());
-    logger->debugInt("IN COMPUTE instr", properties.instructions_per_time);
-    logger->debugInt("IN COMPUTE tot", current_job->getNumberOfInstructions());
-
     job_carry_over = 
       current_job->addInstructionsCompleted(properties.instructions_per_time + 
                                             job_carry_over);
-    logger->debugInt("IN COMPUTE carry_over", job_carry_over);
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
@@ -347,20 +321,16 @@ void Worker::compute() {
       // possibly return here
     }
 
-    logger->debugInt("CURRENTTIME", currentTime);
     if ((currentTime % 5) == 0) {
-      logger->debug("TIME FOR SWAPPING");
       swapJob();            
     }
   }
 }
 
 void Worker::swap() {
-  logger->debugInt("Swapping time is", time_to_swap);
-  logger->debugInt("State.start", state.start);
   if ((currentTime-state.start) == time_to_swap) {
-    startJob();
     logger->workerInt("Swap completed on", getWorkerID());
+    startJob();
   }
 }
 
@@ -379,11 +349,9 @@ bool Worker::hasMoreWork() {
 }
 
 bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
-  logger->debugInt("CURRENT STATE is", state.current);
   state.current = newstate;
   state.start = currentTime;
   state.accepting_jobs = accept_jobs;
-  logger->debugInt("CHANGED STATE to", state.current);
   return true;
 }
 

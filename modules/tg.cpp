@@ -11,7 +11,7 @@ scheduler = sched;
 }
 list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_input){
 	 srand(time(NULL));
-	 fstream file("modules/input.conf");
+	 fstream file("config/input.conf");
 	 string strings;
 	 for(int i=0; i<total_input; i++){
 		file>> strings;
