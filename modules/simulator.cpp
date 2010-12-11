@@ -42,6 +42,7 @@ void Simulator::execute() {
   
   // read list of workers
   readWorkers(scheduler);
+  runWorkers(); // tmp
 
   scheduler->submitWorkers(workers);
 
@@ -71,12 +72,9 @@ void Simulator::execute() {
 	  task_generator_stop = true;
 
       }
-
-
+      runWorkers();        
     }
 
-      runWorkers();    
-    
     
     scheduler->runScheduler();
     //    scheduler->print();   //just added for debugging - can be removed

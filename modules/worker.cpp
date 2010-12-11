@@ -55,7 +55,7 @@ void Worker::execute() {
 
 /* API towards scheduler */
 bool Worker::startWorker() {
-  state.started = currentTime;
+  state.started = currentTime/1000;
   return setState(INITIALISING, false);
 }
 
@@ -128,17 +128,17 @@ double Worker::getAverageResponseTime() {
   
   list<Job>::iterator job;
   for (job = jobs.begin(); job != jobs.end(); ++job) {
-    avg += (currentTime - (*job).getStartedTime());
+    avg += (currentTime/1000 - (*job).getStartedTime());
     number_of_jobs++;
   }
 
   for (job = ram.begin(); job != ram.end(); ++job) {
-    avg += (currentTime - (*job).getStartedTime());
+    avg += (currentTime/1000 - (*job).getStartedTime());
     number_of_jobs++;
   }
 
   if (current_job != NULL) {
-    avg += (currentTime - current_job->getStartedTime());
+    avg += (currentTime/1000 - current_job->getStartedTime());
     number_of_jobs++;
   }
 
@@ -309,7 +309,7 @@ void Worker::removeJob() {
 }
 
 void Worker::initialise() {
-  if ((currentTime-state.start) == properties.time_to_startup) {
+  if ((currentTime/1000-state.start) == properties.time_to_startup) {
     logger->workerInt("Started Worker (ID)", getWorkerID());
     setState(IDLE, true);
     if (hasMoreWork()) {
@@ -334,7 +334,7 @@ void Worker::compute() {
       removeJob();
     }
 
-    if ((currentTime % 5) == 0) {
+    if ((currentTime/1000 % 5) == 0) {
       if (current_job == NULL) {
         logger->debug("No job to swap out, starting new");
         startJob();
@@ -347,7 +347,7 @@ void Worker::compute() {
 }
 
 void Worker::swap() {
-  if ((currentTime-state.start) == time_to_swap) {
+  if ((currentTime/1000-state.start) == time_to_swap) {
     logger->debugInt("Swap completed on", getWorkerID());
     startJob();
   }
@@ -369,7 +369,7 @@ bool Worker::hasMoreWork() {
 
 bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
   state.current = newstate;
-  state.start = currentTime;
+  state.start = currentTime/1000;
   state.accepting_jobs = accept_jobs;
   return true;
 }
