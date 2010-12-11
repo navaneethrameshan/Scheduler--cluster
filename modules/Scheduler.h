@@ -87,6 +87,14 @@ class Scheduler {
 
   //prints the summary of total jobs processed
   void printSummary();
+
+
+  //returns the best worker in terms of available memory - you should have guessed
+  Worker* getBestWorkerInTermsOfAvailableMemory();
+
+  //runs the Web Mode scheduler
+  void runWebModeScheduler();
+
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
 };
