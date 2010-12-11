@@ -180,8 +180,8 @@ Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
   int bestMemory = -1;
   
   for(w=workers.begin();w!=workers.end();w++) {
-    //    int wid = (*w)->getWorkerID();
-    if((*w)->isAcceptingJobs())
+    //int wid = (*w)->getWorkerID();
+    if(/*(*w)->isAcceptingJobs()*/true)
       {
     int availmem = (*w)->getAvailableMemory();
     if(availmem > bestMemory)
@@ -209,11 +209,14 @@ void Scheduler::runWebModeScheduler()
   else 
     {
       if( (int)queuedJobs.size() > 0) {
-	do
+	//getting the size of queuedJobs
+	int qsize = queuedJobs.size();
+
+	while(qsize > 0)
 	  {
 	    //getting the best worker
 	    Worker *bestWorker = getBestWorkerInTermsOfAvailableMemory();
-	    
+
 	    //getting a Job from the queue
 	    Job job = queuedJobs.front();
 	    queuedJobs.pop_front();
@@ -229,14 +232,14 @@ void Scheduler::runWebModeScheduler()
 		runningJobs.push_back(job);
 	      }
 	    else {//we werent able to submit job to worker so putting it back to the queuedJobs list
-	      queuedJobs.push_front(job);
+	      queuedJobs.push_back(job);
 	      stringstream s;
 	      s<<"Couldn't submit JobID"<<job.getJobID()<<
 		" to the best Worker "<<bestWorker->getWorkerID();
-	      log->decision(s.str());
+		log->decision(s.str());
 	    }
-
-	  } while(queuedJobs.size() > 0);
+	    qsize--;
+	  } 
       }
     }
 }
@@ -259,14 +262,13 @@ int Scheduler::runScheduler()
     if(scheduler_mode == "S")
       {
 	//running the roundrobin scheduler
-	//runRoundRobinScheduler();
-	runWebModeScheduler();
+	runRoundRobinScheduler();	
       }
     
     else if(scheduler_mode == "W")
       {
-	//running the roundrobin scheduler
-	runRoundRobinScheduler();
+	//running the web mode scheduler
+	runWebModeScheduler();
       }
     
     //gathering statistics of all workers

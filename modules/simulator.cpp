@@ -58,24 +58,28 @@ void Simulator::execute() {
 
     // run task generator
     if (currentTime % 1000 == 0) {
-    if(task_generator_stop == false) {
-      start_pos = task_generator.add_job_list(&(*current_task), 
-                                              current_task->job_rate, 
-                                              start_pos);
-      task_generator.send_task();
+      if(task_generator_stop == false) {
+	start_pos = task_generator.add_job_list(&(*current_task), 
+						current_task->job_rate, 
+						start_pos);
+	task_generator.send_task();
 
-      if (start_pos == 0)
-        ++current_task;
+	if (start_pos == 0)
+	  ++current_task;
 
-      if(current_task==tasklist.end())
-        task_generator_stop = true;
+	if(current_task==tasklist.end())
+	  task_generator_stop = true;
+
+      }
+
+
     }
-    }
 
-    runWorkers();
+      runWorkers();    
+    
     
     scheduler->runScheduler();
-    scheduler->print();   //just added for debugging - can be removed
+    //    scheduler->print();   //just added for debugging - can be removed
     
     if ((currentTime % 100) == 0) {
       logRunningAverage();
