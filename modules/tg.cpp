@@ -10,11 +10,13 @@ scheduler = sched;
 
 }
 list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_input){
-	 srand(time(NULL));
+  //srand(time(NULL));
+  srand(1);
 	 fstream file("config/input.conf");
-	 string strings;
+	 char type;
+	 int sum=0;
 	 for(int i=0; i<total_input; i++){
-		file>> strings;
+		file>> type;
 		file>> TASK_ID;
 		file>> NO_JOB;
 		file>> RATE;
@@ -23,15 +25,27 @@ list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_in
 		file>> HIGH_INST_BOUND;
 		file>> LOW_MEM;
 		file>> HIGH_MEM;
-		
-	  for(int k=0;k<NO_JOB;k++){
-	  MEM= LOW_MEM+rand()%((HIGH_MEM-LOW_MEM!=0)?(HIGH_MEM-LOW_MEM):1);
- INST=LOW_INST_BOUND+rand()%((HIGH_INST_BOUND-LOW_INST_BOUND!=0)?(HIGH_INST_BOUND-LOW_INST_BOUND):1);
-         job[i][k].init(TASK_ID,(k+JOB_START_ID),INST, MEM);
-         }
-         given_task[i].init(TASK_ID,NO_JOB,job[i],RATE); 
-         add_task_list(given_task+i);
-         }
+		if (type == 's' || type == 'S'){ 
+	  		for(int k=0;k<NO_JOB;k++){
+	  			MEM= LOW_MEM+rand()%((HIGH_MEM-LOW_MEM!=0)?(HIGH_MEM-LOW_MEM):1);
+	  			INST=LOW_INST_BOUND+rand()%((HIGH_INST_BOUND-LOW_INST_BOUND!=0)?(HIGH_INST_BOUND-LOW_INST_BOUND):1);
+	         		job[i][k].init(TASK_ID,(k+JOB_START_ID),INST, MEM);
+        		 	}
+         		given_task[i].init(TASK_ID,NO_JOB,job[i],RATE); 
+         		add_task_list(given_task+i);
+         		}
+         	else{
+			for(int k=0;k<NO_JOB;k++){
+	  			MEM= LOW_MEM+rand()%((HIGH_MEM-LOW_MEM!=0)?(HIGH_MEM-LOW_MEM):1);
+	  			INST=LOW_INST_BOUND+rand()%((HIGH_INST_BOUND-LOW_INST_BOUND!=0)?(HIGH_INST_BOUND-LOW_INST_BOUND):1);
+	         		job[k+sum][0].init(TASK_ID,(k+JOB_START_ID),INST, MEM);
+				given_task[k+sum].init(TASK_ID,1,job[k+sum],RATE); 
+				add_task_list(given_task+k+sum);
+        		 	}
+        		 sum = sum + NO_JOB;
+        		 }
+         	
+         	}
          showtask();
          return (list1); 
  }

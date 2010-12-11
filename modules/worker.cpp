@@ -187,11 +187,11 @@ bool Worker::cancelJob(unsigned int jobId) {
 void Worker::debugJobs() {
   list<Job>::iterator job;
   for (job = ram.begin(); job != ram.end(); ++job) {
-    cout << "In ram: " << (*job).getJobID() << endl;
+    logger->debugInt("In ram", (*job).getJobID());
   }
 
   for (job = jobs.begin(); job != jobs.end(); ++job) {
-    cout << "In hdd: " << (*job).getJobID() << endl;
+    logger->debugInt("In hdd", (*job).getJobID());
   }
   
 }
@@ -205,6 +205,9 @@ bool Worker::startJob() {
     result = true;
     logger->workerInt("Activated job", current_job->getJobID());
   }
+
+  //debugJobs();
+
   return result;
 }
 
@@ -244,16 +247,20 @@ bool Worker::activateJob() {
     return false;
 
   // take from mem queue, although it is still considered being in memory
-  list<Job>::iterator i;
-  i = ram.begin();
-  tmp_current_job = *i;
-  current_job = &tmp_current_job;
-  ram.pop_front();
-  
-  time_to_swap = 0; 
+  if ((int) ram.size() > 0) {
+    list<Job>::iterator i;
+    i = ram.begin();
+    tmp_current_job = *i;
+    current_job = &tmp_current_job;
+    ram.pop_front();
+    time_to_swap = 0; 
+    setState(COMPUTING, true);
+    return true;
+  } else {
+    setState(IDLE,true);
+    return false;
+  }
 
-  setState(COMPUTING, true);
-  return true;
 }
 
 bool Worker::swapInMemory() {
@@ -316,7 +323,7 @@ void Worker::compute() {
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
-      scheduler->notifyJobCompletion(current_job->getJobID()); 
+      scheduler->notifyJobCompletion(current_job->getJobID(), id); 
       removeJob();
       // possibly return here
     }
