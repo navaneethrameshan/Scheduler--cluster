@@ -68,8 +68,8 @@ void Logger::workerAverage(double avg_response_time, float cost,
 
 void Logger::totals(long exec, long cpu, float cost) {
   stringstream entry;
-  entry << "[SIMULATOR] CPU: " << cpu
-        << " EXECUTION: " << exec
+  entry << "[SIMULATOR] TOTAL: " << cpu
+        << " ACTIVE: " << exec
         << " COST: " << cost;
 #ifndef DEBUG
   cout << entry.str() << endl;
