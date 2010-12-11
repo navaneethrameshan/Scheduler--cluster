@@ -233,9 +233,12 @@ bool Worker::moveJobToMemory() {
       list<Job>::iterator i;
       i = jobs.begin();
       ram.push_back(*i);
-      jobs.pop_front();
-      state.available_memory -= jobs.front().getMemoryConsumption();
+
+      state.available_memory -= (*i).getMemoryConsumption();
+
       // add swap cost
+
+      jobs.pop_front();
       return true;
     } 
   }
@@ -283,6 +286,7 @@ bool Worker::swapJob() {
     return swapInMemory(); 
 
   state.available_memory += current_job->getMemoryConsumption();
+
   tmp_job_size = current_job->getMemoryConsumption();
   current_job->increaseSwapCount();
   time_to_swap = calculateSwappingTime(current_job);
@@ -295,7 +299,10 @@ bool Worker::swapJob() {
 }
 
 void Worker::removeJob() {
+  logger->debugInt("adding", current_job->getMemoryConsumption());
+  logger->debugInt("available before", state.available_memory);
   state.available_memory += current_job->getMemoryConsumption();
+  logger->debugInt("available after", state.available_memory);
   current_job = NULL;
   job_carry_over = 0;
   setState(IDLE, true);
@@ -325,18 +332,23 @@ void Worker::compute() {
       logger->workerInt("Removing job", current_job->getJobID());
       scheduler->notifyJobCompletion(current_job->getJobID(), id); 
       removeJob();
-      // possibly return here
     }
 
     if ((currentTime % 5) == 0) {
-      swapJob();            
+      if (current_job == NULL) {
+        logger->debug("No job to swap out, starting new");
+        startJob();
+      } else {
+        logger->debugInt("Swapping out", current_job->getJobID());
+        swapJob();    
+      }
     }
   }
 }
 
 void Worker::swap() {
   if ((currentTime-state.start) == time_to_swap) {
-    logger->workerInt("Swap completed on", getWorkerID());
+    logger->debugInt("Swap completed on", getWorkerID());
     startJob();
   }
 }
