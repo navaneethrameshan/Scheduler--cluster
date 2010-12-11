@@ -75,7 +75,7 @@ void Simulator::execute() {
     runWorkers();
     
     scheduler->runScheduler();
-    //scheduler->print();   //just added for debugging - can be removed
+    scheduler->print();   //just added for debugging - can be removed
     
     if ((currentTime % 100) == 0) {
       logRunningAverage();

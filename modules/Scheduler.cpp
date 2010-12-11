@@ -173,6 +173,74 @@ void Scheduler::doInitAndOtherStuff()
     }
 }
 
+Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
+
+  Worker *bestWorker;
+  list<Worker *>::iterator w;
+  int bestMemory = -1;
+  
+  for(w=workers.begin();w!=workers.end();w++) {
+    //    int wid = (*w)->getWorkerID();
+    if((*w)->isAcceptingJobs())
+      {
+    int availmem = (*w)->getAvailableMemory();
+    if(availmem > bestMemory)
+    bestMemory = availmem;
+    bestWorker = (*w);
+      }
+      }
+  if(bestMemory > -1)
+    {
+      return bestWorker;
+    }
+  else 
+    {
+      return NULL;
+    }
+}
+
+void Scheduler::runWebModeScheduler() 
+{
+  if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+    {
+      log->decision("Schedeuler is relaxing because there is no work to do, literally.");
+      return;
+    }
+  else 
+    {
+      if( (int)queuedJobs.size() > 0) {
+	do
+	  {
+	    //getting the best worker
+	    Worker *bestWorker = getBestWorkerInTermsOfAvailableMemory();
+	    
+	    //getting a Job from the queue
+	    Job job = queuedJobs.front();
+	    queuedJobs.pop_front();
+	    
+	    //submitting the job to the worker
+	    list<Job> jobs_to_submit;
+	    jobs_to_submit.push_back(job);
+	    bool successfully_submitted =  bestWorker->submitJobs(jobs_to_submit);
+	    if (successfully_submitted) 
+	      {
+		WorkerStatistics *ws = getWorkerStatsForWorker(bestWorker->getWorkerID());
+		ws->incrementSubmittedJobs(getCurrentTime());
+		runningJobs.push_back(job);
+	      }
+	    else {//we werent able to submit job to worker so putting it back to the queuedJobs list
+	      queuedJobs.push_front(job);
+	      stringstream s;
+	      s<<"Couldn't submit JobID"<<job.getJobID()<<
+		" to the best Worker "<<bestWorker->getWorkerID();
+	      log->decision(s.str());
+	    }
+
+	  } while(queuedJobs.size() > 0);
+      }
+    }
+}
+
 bool Scheduler::isScheduleTime() {
   return (  ((milliseconds)%scheduling_interval_for_clock == 0) || (milliseconds == 1)   );
 }
@@ -191,7 +259,8 @@ int Scheduler::runScheduler()
     if(scheduler_mode == "S")
       {
 	//running the roundrobin scheduler
-	runRoundRobinScheduler();
+	//runRoundRobinScheduler();
+	runWebModeScheduler();
       }
     
     else if(scheduler_mode == "W")
@@ -257,7 +326,6 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
   list<Worker* >::iterator i;
   for(i = workers.begin(); i != workers.end(); i++)
     {
-
       int wid = (*i)->getWorkerID();
       int qjobs = (*i)->getQueuedJobs();
       double avgresptime = (*i)->getAverageResponseTime();
@@ -278,13 +346,12 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 	<<"\tavailmem:"<<ws->getAvailableMemory()
        <<"\tsubmittedjobs:"<<ws->getNumberOfSubmittedJobs()
 	<<endl;
-      
     }
 
   //    if(getCurrentTime()%100 == 0)
   //  {
   //DEBUG statement
-  //cout<<s.str()<<endl; //TODO: should be sent to logger instead
+  cout<<s.str()<<endl; //TODO: should be sent to logger instead
   //  }
   
 }
