@@ -55,7 +55,7 @@ void Worker::execute() {
 
 /* API towards scheduler */
 bool Worker::startWorker() {
-  state.started = currentTime/1000;
+  state.started = currentTime;
   return setState(INITIALISING, false);
 }
 
@@ -98,8 +98,8 @@ float Worker::getCostPerHour() {
   return properties.cost_per_hour;
 }
 
-long Worker::getInstructionsPerTime() {
-  return properties.instructions_per_time;
+float Worker::getInstructionsPerTime() {
+  return (float)properties.instructions_per_time/1000;
 }
 
 unsigned int Worker::getWorkerID()
@@ -128,17 +128,17 @@ double Worker::getAverageResponseTime() {
   
   list<Job>::iterator job;
   for (job = jobs.begin(); job != jobs.end(); ++job) {
-    avg += (currentTime/1000 - (*job).getStartedTime());
+    avg += (currentTime - (*job).getStartedTime());
     number_of_jobs++;
   }
 
   for (job = ram.begin(); job != ram.end(); ++job) {
-    avg += (currentTime/1000 - (*job).getStartedTime());
+    avg += (currentTime - (*job).getStartedTime());
     number_of_jobs++;
   }
 
   if (current_job != NULL) {
-    avg += (currentTime/1000 - current_job->getStartedTime());
+    avg += (currentTime - current_job->getStartedTime());
     number_of_jobs++;
   }
 
@@ -299,17 +299,14 @@ bool Worker::swapJob() {
 }
 
 void Worker::removeJob() {
-  logger->debugInt("adding", current_job->getMemoryConsumption());
-  logger->debugInt("available before", state.available_memory);
   state.available_memory += current_job->getMemoryConsumption();
-  logger->debugInt("available after", state.available_memory);
   current_job = NULL;
   job_carry_over = 0;
   setState(IDLE, true);
 }
 
 void Worker::initialise() {
-  if ((currentTime/1000-state.start) == properties.time_to_startup) {
+  if ((currentTime-state.start) == properties.time_to_startup) {
     logger->workerInt("Started Worker (ID)", getWorkerID());
     setState(IDLE, true);
     if (hasMoreWork()) {
@@ -324,9 +321,9 @@ void Worker::compute() {
   }  
 
   if (current_job != NULL) {
+    float completed = getInstructionsPerTime() + job_carry_over;
     job_carry_over = 
-      current_job->addInstructionsCompleted(properties.instructions_per_time + 
-                                            job_carry_over);
+      current_job->addInstructionsCompleted(completed);
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
@@ -334,7 +331,7 @@ void Worker::compute() {
       removeJob();
     }
 
-    if ((currentTime/1000 % 5) == 0) {
+    if ((currentTime % 5) == 0) {
       if (current_job == NULL) {
         logger->debug("No job to swap out, starting new");
         startJob();
@@ -347,7 +344,7 @@ void Worker::compute() {
 }
 
 void Worker::swap() {
-  if ((currentTime/1000-state.start) == time_to_swap) {
+  if ((currentTime-state.start) == time_to_swap) {
     logger->debugInt("Swap completed on", getWorkerID());
     startJob();
   }
@@ -369,7 +366,7 @@ bool Worker::hasMoreWork() {
 
 bool Worker::setState(enum worker_states newstate, bool accept_jobs) {
   state.current = newstate;
-  state.start = currentTime/1000;
+  state.start = currentTime;
   state.accepting_jobs = accept_jobs;
   return true;
 }

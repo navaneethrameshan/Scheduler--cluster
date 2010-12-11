@@ -27,6 +27,7 @@ class Logger {
   void debugInt(string debugString, int value);
   void debugInt(string entity, string debugString, int value);
   void workerInt(string wString, int value);
+  void workerFloat(string wString, float value);
   void info(string infoString);
 
   // scheduler

@@ -10,7 +10,7 @@ class Job {
   int no_inst;
   int mem_size;
 
-  int instructions_completed;
+  float instructions_completed;
   int swap_count;
   unsigned long started;
   
@@ -24,8 +24,8 @@ class Job {
   // added by archie
   int getNumberOfInstructions();
   int getMemoryConsumption();
-  int addInstructionsCompleted(int instructions);
-  int getInstructionsCompleted();
+  float addInstructionsCompleted(float instructions);
+  float getInstructionsCompleted();
   int increaseSwapCount();
   unsigned long getStartedTime();
   void setStartedTime();

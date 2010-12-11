@@ -38,7 +38,7 @@ int Job::getMemoryConsumption() {
   return mem_size;
 }
 
-int Job::addInstructionsCompleted(int instructions) {
+float Job::addInstructionsCompleted(float instructions) {
   instructions_completed += instructions;
   if (instructions_completed > no_inst) 
     return instructions_completed-no_inst;
@@ -46,7 +46,7 @@ int Job::addInstructionsCompleted(int instructions) {
   return 0;
 }
 
-int Job::getInstructionsCompleted() {
+float Job::getInstructionsCompleted() {
   return instructions_completed;
 }
 

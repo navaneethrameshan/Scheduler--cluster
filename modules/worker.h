@@ -43,7 +43,7 @@ class Worker {
   std::list<Job> jobs;
   long total_execution_time;
   long total_cpu_time;
-  int job_carry_over;
+  float job_carry_over;
   int tmp_job_size;
   unsigned int time_to_swap;
   
@@ -79,7 +79,7 @@ class Worker {
   bool isAcceptingJobs();
   int getTotalMemory();
   float getCostPerHour();
-  long getInstructionsPerTime();
+  float getInstructionsPerTime();
   long getTotalExecutionTime();
   long getTotalCPUTime();
   double getAverageResponseTime();

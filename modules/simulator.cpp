@@ -72,14 +72,14 @@ void Simulator::execute() {
 	  task_generator_stop = true;
 
       }
-      runWorkers();        
+
     }
 
-    
+    runWorkers();            
     scheduler->runScheduler();
     //    scheduler->print();   //just added for debugging - can be removed
     
-    if ((currentTime % 100) == 0) {
+    if ((currentTime % 1000) == 0) {
       logRunningAverage();
       scheduler->print();
     }
@@ -230,7 +230,7 @@ void Simulator::logRunningAverage() {
   avg_response_time = avg_response_time/(idle_workers_count + 
                                          computing_workers_count);
 
-  logger->workerAverage(avg_response_time, 
+  logger->workerAverage(avg_response_time/1000, // convert ms to s 
                         cost_so_far,
                         offline_workers_count,
                         idle_workers_count,
@@ -248,7 +248,7 @@ void Simulator::logTotals() {
     totalCPUTime += (*worker)->getTotalCPUTime();
     totalCost += (*worker)->getTotalCost();
   }
-  logger->totals(totalExecutionTime,
-                 totalCPUTime,
+  logger->totals(totalExecutionTime/1000, // ms to s
+                 totalCPUTime/1000, // ms to s
                  totalCost);
 }
