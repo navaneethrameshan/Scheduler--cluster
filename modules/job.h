@@ -13,6 +13,8 @@ class Job {
   float instructions_completed;
   int swap_count;
   unsigned long started;
+	unsigned long endtime;
+	unsigned long starttime;
   
  public:
   int job_id;
@@ -21,6 +23,7 @@ class Job {
   string show();
   //added by wasif
   unsigned int getJobID();
+	unsigned int getTaskID();
   // added by archie
   int getNumberOfInstructions();
   int getMemoryConsumption();
@@ -28,7 +31,11 @@ class Job {
   float getInstructionsCompleted();
   int increaseSwapCount();
   unsigned long getStartedTime();
+	unsigned long getStartTime();
   void setStartedTime();
+	void setStartTime();
+	void setEndTime();
+	unsigned long getEndTime();
 };
 
 static inline bool 
