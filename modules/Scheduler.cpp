@@ -156,6 +156,145 @@ void Scheduler::runRoundRobinScheduler()
 
 }
 
+map<int, int> Scheduler::getJobAwayTime() {
+	map<int,int> totalJobAwayTime;
+	list<Job>::iterator iter;
+	for (iter = runningJobs.begin(); iter != runningJobs.end(); ++iter) {
+		totalJobAwayTime[(*iter).getTaskID()] = 0;
+	}
+	for (iter = runningJobs.begin(); iter != runningJobs.end(); ++iter) {
+		totalJobAwayTime[(*iter).getTaskID()] += (currentTime - (*iter).getStartTime()); // only one task
+		cout << currentTime << " <= Currenttime += Starttime => " << (*iter).getStartedTime() << endl;
+	}
+	return totalJobAwayTime;
+}
+
+
+void Scheduler::runSingleTaskScheduler()
+{
+  
+    gatherStatisticsFromAllWorkers();
+	
+	// no job is completed and no jobs in queue
+	if ((int)queuedJobs.size() == 0 && (int)completedJobs.size() == 0) {
+		// fetch job size ... somehow? 
+	}
+	
+	if ((int)queuedJobs.size() > 0 && (int)completedJobs.size() == 0) {
+		// normal round robin
+	}
+	
+	if ((int)completedJobs.size() > 0 && (int)queuedJobs.size() == 0 && (int)runningJobs.size() >0) {
+		// Calculate an estimate of time to complete each task
+		map<int,int> jobsPerTask;
+		map<int,int> estimatedTimeToComplete;
+		map<int,int> jobAwayTime;
+		list<Job>::iterator iter;
+		map<int,int>::iterator it;
+		for (iter = runningJobs.begin(); iter != runningJobs.end(); ++iter) {
+			jobsPerTask [(*iter).getTaskID()] = 0;
+		}
+		for (iter = runningJobs.begin(); iter != runningJobs.end(); ++iter) {
+			jobsPerTask [(*iter).getTaskID()] = jobsPerTask [(*iter).getTaskID()] + 1;
+		} 
+		
+		jobAwayTime = getJobAwayTime();
+		
+		for ( it=jobsPerTask.begin() ; it != jobsPerTask.end(); it++ ){
+			
+			estimatedTimeToComplete[(*it).first] =  (((((*it).second) * (taskTimeAverage[(*it).first]))-(jobAwayTime[(*it).first]) )/ (int)workers.size())>0 ?
+													(((((*it).second) * (taskTimeAverage[(*it).first]))-(jobAwayTime[(*it).first]) )/ (int)workers.size()):
+													(((((*it).second) * (taskTimeAverage[(*it).first])))/ (int)workers.size()); //fixme math
+		
+			cout <<"["<<currentTime/1000<<"]"<<"running jobs as per map: ++ " <<((*it).second) << "\n \n";
+		} 
+ 
+		
+		cout <<"["<<currentTime/1000<<"]"<<"Average Time: ++ " <<(taskTimeAverage[(*it).first]/1000)<<endl;
+		cout <<"["<<currentTime/1000<<"]"<<"Job Away Time: ++  " <<jobAwayTime[(*it).first]/1000<< endl;
+		cout <<"["<<currentTime/1000<<"]"<<"Time Estimated: ++ " <<(estimatedTimeToComplete[1]/1000)+ currentTime/1000<< endl;
+		cout <<"["<<currentTime/1000<<"]"<<"running jobs size: ++ " <<runningJobs.size() << "\n \n";
+//		cout <<"["<<currentTime/1000<<"]"<<"running jobs as per map: ++ " <<((*it).second) << "\n \n";	
+
+		/*if (estimatedTimeToComplete > 3600*1000) {
+			// start nodes 
+			int numberOfNodesToStart = ((int)runningJobs.size() *(taskTimeAverage[1]-getJobAwayTime())) / 3600*1000;
+			// shift jobs
+			cout << "startnodes ++ " << numberOfNodesToStart << "t avg" << taskTimeAverage[1] << endl;
+		}*/
+	}
+	
+	
+/*	if ((int)completedJobs.size() > 0 && (int)queuedJobs.size() > 0 && (int)runningJobs.size() >0 ) {
+		int estimatedTimeToComplete =  (((((int)runningJobs.size()+(int)queuedJobs.size()) * (taskTimeAverage[1]))-getJobAwayTime() )/ (int)workers.size())>0 ?
+									   (((((int)runningJobs.size()+(int)queuedJobs.size()) * (taskTimeAverage[1]))-getJobAwayTime() )/ (int)workers.size()):
+									   (((((int)runningJobs.size()+(int)queuedJobs.size()) * (taskTimeAverage[1])))/ (int)workers.size()); //fixme math		
+		
+		if (estimatedTimeToComplete > 3600*1000) {
+			// start nodes
+			int numberOfNodesToStart = (((int)runningJobs.size() + (int)queuedJobs.size()) * taskTimeAverage[1]) / 3600*1000;
+		//	cout << "startnodes -" << numberOfNodesToStart << endl;
+			
+		}
+		
+	} */
+    
+    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+      {
+	log->decision("Nothing to do, so chilling!");
+	return;
+      }
+    else 
+      {
+	if( (int)queuedJobs.size() > 0) 
+	  {
+	    //start nodes for each job in queue
+	    list<Job >::iterator i;
+	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
+	      {
+
+		if( (*j)->isAcceptingJobs())
+		      {
+			list<Job> jobs_to_submit;
+			jobs_to_submit.push_back(*i);	
+
+			
+
+			if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
+			  {
+				  // set start time of job
+				  (*i).setStartTime();
+				  
+			    /* TODO: Confirm if this is the correct way of getting an object by reference  and that the changes will be persistent*/
+			    WorkerStatistics *ws = getWorkerStatsForWorker((*j)->getWorkerID());
+			    ws->incrementSubmittedJobs(getCurrentTime());
+			    /**/
+			    runningJobs.push_back(*i); //adding the job to runningJobs
+                                                     
+			    stringstream s;
+                            s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
+                            log->decision(s.str());
+
+			    queuedJobs.erase(i); //erasing the Job from the queuedJobs
+			    i--; 
+			    j++;
+			    if(j == workers.end()) 
+			      {
+				j = workers.begin();
+			      }
+			   
+			  }
+			
+		      }
+
+	      }
+
+	  }
+      }
+ 
+
+}
+
 //! Do Initializations and stuff - basically whatver stuff that needs to be done before doing actual scheduling
 void Scheduler::doInitAndOtherStuff()
 {
@@ -262,7 +401,8 @@ int Scheduler::runScheduler()
     if(scheduler_mode == "S")
       {
 	//running the roundrobin scheduler
-	runRoundRobinScheduler();	
+	//runRoundRobinScheduler();	
+	runSingleTaskScheduler();
       }
     
     else if(scheduler_mode == "W")
@@ -299,14 +439,29 @@ WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
 			
 
 //! A Worker node will notify the Scheduler when a job finishes its execution
-int Scheduler::notifyJobCompletion(unsigned int job_id, int workerid)
+int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, int workerid)
 {
   //find the job_id in the runningJobs List
   list<Job >::iterator i;
   for(i=runningJobs.begin();i!=runningJobs.end();++i)
       {
-	if( (*i).getJobID() == job_id )
+	if( (*i).getTaskID() == task_id && (*i).getJobID() == job_id )
 	  {
+		  (*i).setEndTime();
+		  
+		  taskJobCount[(*i).getTaskID()] += 1;
+		  taskTimeAverage[(*i).getTaskID()] = (taskTimeAverage[(*i).getTaskID()] + ((*i).getEndTime() - (*i).getStartTime())) /
+												taskJobCount[(*i).getTaskID()];
+		  
+		  cout << (*i).getEndTime()/1000 << " End +-- Start " << (*i).getStartTime()/1000 << endl;
+		  
+		  map<int,int>::iterator it;
+		  cout << "foo contains:\n";
+		  for ( it=taskTimeAverage.begin() ; it != taskTimeAverage.end(); it++ )
+			  cout << (*it).first << " TaskId +--Avg. Time " << (*it).second/1000 << endl;
+		  
+		  
+		  
 	    completedJobs.push_back(*i); //marking the job as complete
 	    runningJobs.erase(i); //erasing the job from runningJobs 
 	    --i; 

@@ -328,10 +328,12 @@ void Worker::compute() {
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
-      scheduler->notifyJobCompletion(current_job->getJobID(), id); 
+      scheduler->notifyJobCompletion(current_job->getTaskID(), 
+									 current_job->getJobID(), id); 
       removeJob();
     }
 
+	  
     if ((currentTime % 5000) == 0) {
       if (current_job == NULL) {
         logger->debug("No job to swap out, starting new");

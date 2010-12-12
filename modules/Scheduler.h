@@ -14,6 +14,7 @@
 #include <string>
 #include <cstdlib>
 #include <list>
+#include <map>
 #include <math.h>
 using namespace std;
 
@@ -22,8 +23,8 @@ using namespace std;
 #include "WorkerStatistics.h"
 class Worker;
 class WorkerStatistics;
-class Scheduler {
 
+class Scheduler {
  private:
   Logger* log;
   string scheduler_mode;
@@ -32,6 +33,8 @@ class Scheduler {
   long milliseconds; 
   bool isFirstTime;
   
+	map<int,int> taskTimeAverage;
+	map<int,int> taskJobCount;
   list<Worker *> workers;    //Contains information of all worker nodes
   list<Job > queuedJobs;    //Contains jobs which the Scheduler has received and have not started running
   list<Job > completedJobs; //Contains jobs which have been completed
@@ -39,6 +42,7 @@ class Scheduler {
   list<WorkerStatistics *> workerStats; //Contains stats for each worker node
 
   list<Worker *>::iterator j; //iterator used by runScheduler() function
+	map<int,int> getJobAwayTime();
 
 
  public:
@@ -62,7 +66,7 @@ class Scheduler {
   int runScheduler(); 
     
   // a Worker node will notify the Scheduler when a job finishes its execution
-  int notifyJobCompletion(unsigned int job_id, int workerid);
+  int notifyJobCompletion(unsigned int task_id, unsigned int job_id, int workerid);
 
   // checks if we can terminate the simulation
   bool areAllJobsCompleted();
@@ -94,6 +98,9 @@ class Scheduler {
 
   //runs the Web Mode scheduler
   void runWebModeScheduler();
+  
+  //runs Single Task scheduler
+  void runSingleTaskScheduler();
 
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
