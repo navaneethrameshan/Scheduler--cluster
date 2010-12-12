@@ -47,6 +47,7 @@ class Worker {
   float job_carry_over;
   int tmp_job_size;
   unsigned int time_to_swap;
+  std::map<long, int> job_completion;
 
   void initialise();
   void compute();
@@ -89,6 +90,7 @@ class Worker {
   int getQueuedJobs();
   bool ping();
   bool cancelJob(unsigned int taskId, unsigned int jobId);
+  std::map<long,int> getCompletionTimes(int windowSize); 
 
 //added by wasif
 unsigned int getWorkerID();

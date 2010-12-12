@@ -1,4 +1,5 @@
 #include <list>
+#include <map>
 #include <iostream>
 #include <fstream>
 
@@ -80,7 +81,7 @@ void Simulator::execute() {
     //    scheduler->print();   //just added for debugging - can be removed
     
     // store values for moving average
-    if ((currentTime % (config->polling_interval*1000)) == 0) {
+    if ((currentTime % 1000) == 0) {
       if ((int)slidingWindow.size() == config->sliding_window) {
         slidingWindow.pop_front();
         slidingWindow.push_back(getWorkerAverages());
@@ -90,7 +91,7 @@ void Simulator::execute() {
     }
 
     // output values to log
-    if ((currentTime % (config->sliding_window*1000)) == 0) {
+    if ((currentTime % (config->polling_interval*1000)) == 0) {
       logRunningAverage();
     }
 
@@ -255,24 +256,28 @@ void Simulator::logRunningAverage() {
 
 double Simulator::getWorkerAverages() {
   double avg_response_time = 0;
-  int idle_workers_count = 0;
-  int computing_workers_count = 0;
+  int job_count = 0;
+
+  map<long,int>::iterator it;
 
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
-    if( (*worker)->getState() == IDLE  ) {
-      avg_response_time += (*worker)->getAverageResponseTime();
-      idle_workers_count++;
-    }
-    if( (*worker)->getState() == COMPUTING || 
+    map<long,int> times = (*worker)->getCompletionTimes(config->sliding_window*1000);
+
+    if( (*worker)->getState() == IDLE ||
+        (*worker)->getState() == COMPUTING || 
         (*worker)->getState() == SWAPPING  ) {
-      avg_response_time += (*worker)->getAverageResponseTime();
-      computing_workers_count++;
+      for (it = times.begin(); 
+           it != times.end(); ++it) {
+        if ((*it).first <= (currentTime - (config->sliding_window*1000))) {
+          avg_response_time += (*it).second;
+          job_count++;
+        }
+      } 
     }
   } 
   
-  avg_response_time = avg_response_time/(idle_workers_count + 
-                                         computing_workers_count);
+  avg_response_time = avg_response_time/job_count;
   return avg_response_time;
 }
 

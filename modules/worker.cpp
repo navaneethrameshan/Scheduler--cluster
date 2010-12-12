@@ -183,6 +183,10 @@ bool Worker::cancelJob(unsigned int taskId, unsigned int jobId) {
   return false; // no such job id on this worker
 }
 
+std::map<long,int> Worker::getCompletionTimes(int windowSize) {
+  return job_completion;
+}
+
 /* ============= Private methods ============== */
 void Worker::debugJobs() {
   list<Job>::iterator job;
@@ -302,6 +306,7 @@ bool Worker::swapJob() {
 
 void Worker::removeJob() {
   state.available_memory += current_job->getMemoryConsumption();
+  job_completion[currentTime] = (currentTime - current_job->getStartedTime());
   current_job = NULL;
   job_carry_over = 0;
   setState(IDLE, true);
