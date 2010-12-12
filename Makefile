@@ -34,5 +34,6 @@ clean:
 	@rm -f modules/*~
 	@rm -rf docs/html/
 	@rm -rf graphs/
+	@rm -f cloud.log
 
 
