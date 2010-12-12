@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-c -g -Wall -Imodules/ -DDEBUG
+CFLAGS=-c -g -Wall -Imodules/ 
 LDFLAGS=
 DOCSCONFIG=Doxyfile
 SOURCES=main.cpp $(filter-out $(SRC_EXCEPT), $(wildcard modules/*.cpp))

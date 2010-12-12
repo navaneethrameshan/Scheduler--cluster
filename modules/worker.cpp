@@ -199,8 +199,9 @@ void Worker::debugJobs() {
 bool Worker::startJob() {
   bool result;
 
-  while (moveJobToMemory());
-  
+  //  while (moveJobToMemory());
+  moveJobToMemory();
+
   if (activateJob()) {
     result = true;
     logger->workerInt("Activated job", current_job->getJobID());
