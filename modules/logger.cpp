@@ -62,10 +62,13 @@ void Logger::workerFloat(string debugString, float value) {
 /* for simulator */ 
 void Logger::workerAverage(double avg_response_time, float cost,
                            int offline, int idle, int computing, int jobs) {
+  int active = idle + computing;
+
   stringstream entry;
   entry << "-" << currentTime/1000 << "\t" // in s 
         << avg_response_time << "\t"
         << cost << "\t"
+        << active << "\t"
         << offline << "\t"
         << idle << "\t"
         << computing << "\t"
@@ -73,11 +76,15 @@ void Logger::workerAverage(double avg_response_time, float cost,
   write(entry.str());
 }
 
-void Logger::totals(long exec, long cpu, float cost) {
+void Logger::totals(long exec, long cpu, float cost, double avgtime) {
   stringstream entry;
-  entry << "[SIMULATOR] TOTAL: " << cpu
-        << " ACTIVE: " << exec
-        << " COST: " << cost;
+  entry << "---------------- [SIMULATOR] ----------------- \n" 
+        << "Total:\t\t\t" << cpu << "s\n"
+        << "Active:\t\t\t" << exec << "s\n"
+        << "Cost: \t\t\t" << cost << " Euro\n"
+        << "Job avg response time: \t" << avgtime << "s\n"
+        << "Standard deviation: \tXXs\n" 
+        << "----------------------------------------------";
 #ifndef DEBUG
   cout << entry.str() << endl;
 #endif

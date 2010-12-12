@@ -18,6 +18,7 @@ struct WORKER_PROPERTIES {
   unsigned long swapping_time; 
   long instructions_per_time;
   int quantum;
+  int notification_time;
 };
 
 struct WORKER_STATE {

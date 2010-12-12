@@ -335,13 +335,14 @@ void Worker::compute() {
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
+      job_carry_over -= properties.notification_time;
       scheduler->notifyJobCompletion(current_job->getTaskID(), 
-									 current_job->getJobID(), id); 
+                                     current_job->getJobID(), id); 
       removeJob();
     }
 
 	  
-    if ((currentTime % 5000) == 0) {
+    if ((currentTime % properties.quantum) == 0) {
       if (current_job == NULL) {
         logger->debug("No job to swap out, starting new");
         startJob();
@@ -420,4 +421,5 @@ void Worker::setProperties(WORKER_PROPERTIES *props) {
   properties.swapping_time = props->swapping_time;
   properties.instructions_per_time = props->instructions_per_time;
   properties.quantum = props->quantum;
+  properties.notification_time = props->notification_time;
 }

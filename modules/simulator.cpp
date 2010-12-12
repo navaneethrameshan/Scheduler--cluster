@@ -55,8 +55,9 @@ void Simulator::execute() {
   bool task_generator_stop = false;
 
   while (true) {
-    if (scheduler->areAllJobsCompleted() && task_generator_stop)
+    if (scheduler->areAllJobsCompleted() && task_generator_stop) {
       break;
+    }
 
     // run task generator
     if (currentTime % 1000 == 0) {
@@ -97,7 +98,7 @@ void Simulator::execute() {
 
     currentTime++;
   }
-  scheduler->print();   
+  //scheduler->print();   
   //scheduler->printSummary();
   cleanUp();
 }
@@ -151,7 +152,8 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
   properties->time_to_startup = (int)config->worker_node_startup_time;
   properties->swapping_time = (int)config->worker_node_swapping_cost;
   properties->instructions_per_time = (long)config->worker_node_speed;
-  properties->quantum = (int)config->worker_quantum;
+  properties->quantum = config->worker_quantum*1000;
+  properties->notification_time = (int)config->worker_node_sched_notif_time;
 
   for (int i = 1; i <= workers_to_create; i++) {
     Worker *worker = new Worker(i, properties, scheduler);
@@ -282,16 +284,33 @@ double Simulator::getWorkerAverages() {
 }
 
 void Simulator::logTotals() {
+  double avg_response_time = 0;
+  int job_count = 0;
   long totalExecutionTime = 0;
   long totalCPUTime = 0;
   float totalCost = 0;
+
+  map<long,int>::iterator it;
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
     totalExecutionTime += (*worker)->getTotalExecutionTime();
     totalCPUTime += (*worker)->getTotalCPUTime();
     totalCost += (*worker)->getTotalCost();
+
+    map<long,int> times = (*worker)->getCompletionTimes(0);
+    for (it = times.begin(); it != times.end(); ++it) {
+      avg_response_time += (*it).second;
+      job_count++;
+    } 
+
   }
+    
+  avg_response_time = avg_response_time / job_count;
+  
   logger->totals(totalExecutionTime/1000, // ms to s
                  totalCPUTime/1000, // ms to s
-                 totalCost);
+                 totalCost, 
+                 avg_response_time/1000);
+  
+
 }

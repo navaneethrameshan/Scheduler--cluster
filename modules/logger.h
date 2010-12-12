@@ -37,7 +37,7 @@ class Logger {
   // simulator
   void workerAverage(double avg_response_time, float cost,
                      int offline, int idle, int computing, int jobs);
-  void totals(long exec, long cpu, float cost);
+  void totals(long exec, long cpu, float cost, double job_avg_time);
   
 };
 
