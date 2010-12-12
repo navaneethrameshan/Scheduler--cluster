@@ -79,9 +79,19 @@ void Simulator::execute() {
     scheduler->runScheduler();
     //    scheduler->print();   //just added for debugging - can be removed
     
-    if ((currentTime % 20000) == 0) {
+    // store values for moving average
+    if ((currentTime % (config->polling_interval*1000)) == 0) {
+      if ((int)slidingWindow.size() == config->sliding_window) {
+        slidingWindow.pop_front();
+        slidingWindow.push_back(getWorkerAverages());
+      } else {
+        slidingWindow.push_back(getWorkerAverages());
+      }
+    }
+
+    // output values to log
+    if ((currentTime % (config->sliding_window*1000)) == 0) {
       logRunningAverage();
-      scheduler->print();
     }
 
     currentTime++;
@@ -155,7 +165,7 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
 SIMULATOR_CONFIG* Simulator::readSimulatorConfig() {
   string line;
   ifstream infile;
-  string values[10];
+  string values[15];
   int i = 0;
   SIMULATOR_CONFIG *config = new SIMULATOR_CONFIG; 
 
@@ -188,6 +198,10 @@ SIMULATOR_CONFIG* Simulator::readSimulatorConfig() {
   config->worker_node_sched_notif_time = strtod(values[7].c_str(), NULL);
   //in euros/hour
   config->worker_node_cost = strtod(values[8].c_str(), NULL);
+  // sliding window
+  config->sliding_window = (int)strtod(values[9].c_str(), NULL);
+  // polling interval 
+  config->polling_interval = (int)strtod(values[10].c_str(), NULL);
 
   infile.close();
 
@@ -217,18 +231,19 @@ void Simulator::logRunningAverage() {
     if( (*worker)->getState() == IDLE  ) {
       idle_workers_count++;
       cost_so_far += (*worker)->getTotalCost();
-      avg_response_time += (*worker)->getAverageResponseTime();
     }
     if( (*worker)->getState() == COMPUTING || 
         (*worker)->getState() == SWAPPING  ) {
       computing_workers_count++;
-      cost_so_far += (*worker)->getTotalCost();
-      avg_response_time += (*worker)->getAverageResponseTime();
+      cost_so_far += (*worker)->getTotalCost();    
     }
   } 
-  
-  avg_response_time = avg_response_time/(idle_workers_count + 
-                                         computing_workers_count);
+
+  list<double>::iterator it;
+  for (it = slidingWindow.begin(); it != slidingWindow.end(); ++it) {
+    avg_response_time += *it;
+  }
+  avg_response_time = avg_response_time/(int)slidingWindow.size();
 
   logger->workerAverage(avg_response_time/1000, // convert ms to s 
                         cost_so_far,
@@ -236,6 +251,29 @@ void Simulator::logRunningAverage() {
                         idle_workers_count,
                         computing_workers_count,
                         queued_jobs);
+}
+
+double Simulator::getWorkerAverages() {
+  double avg_response_time = 0;
+  int idle_workers_count = 0;
+  int computing_workers_count = 0;
+
+  list<Worker *>::iterator worker;
+  for (worker = workers.begin(); worker != workers.end(); ++worker) {
+    if( (*worker)->getState() == IDLE  ) {
+      avg_response_time += (*worker)->getAverageResponseTime();
+      idle_workers_count++;
+    }
+    if( (*worker)->getState() == COMPUTING || 
+        (*worker)->getState() == SWAPPING  ) {
+      avg_response_time += (*worker)->getAverageResponseTime();
+      computing_workers_count++;
+    }
+  } 
+  
+  avg_response_time = avg_response_time/(idle_workers_count + 
+                                         computing_workers_count);
+  return avg_response_time;
 }
 
 void Simulator::logTotals() {

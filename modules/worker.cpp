@@ -324,15 +324,6 @@ void Worker::compute() {
 
   if (current_job != NULL) {
 
-    map<Job *, int> fp = getJobFootprints();
-    map<Job *, int>::iterator it; 
-    for(it = fp.begin(); it != fp.end(); ++it)
-      {
-        cout << ((*it).first)->getJobID() << "-+-" << (*it).second << endl;
-      }
-
-
-
     float completed = getInstructionsPerTime() + job_carry_over;
     job_carry_over = 
       current_job->addInstructionsCompleted(completed);
