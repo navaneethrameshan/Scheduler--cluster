@@ -14,6 +14,9 @@ void Job:: init(int taskid, int jobid, int inst, int mem){
   mem_size=mem;
   instructions_completed = 0;
   swap_count = 0;
+	started = 0;
+	endtime = 0;
+	starttime =0;
 }
 
 string Job:: show(){
@@ -27,6 +30,10 @@ string Job:: show(){
 unsigned int Job::getJobID()
 {
   return job_id;
+}
+
+unsigned int Job::getTaskID() {
+	return task_id;
 }
 
 //added by archie
@@ -58,7 +65,21 @@ void Job::setStartedTime() {
   started = currentTime;
 }
 
+void Job::setStartTime() {
+	starttime = currentTime;
+}
+
+void Job::setEndTime() {
+	endtime = currentTime;
+}
+
+unsigned long Job::getEndTime() {
+	return endtime;
+}
+
 unsigned long Job::getStartedTime() {
   return started;
 }
-
+unsigned long Job::getStartTime() {
+	return starttime;
+}
