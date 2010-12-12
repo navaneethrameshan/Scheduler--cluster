@@ -79,7 +79,7 @@ void Simulator::execute() {
     scheduler->runScheduler();
     //    scheduler->print();   //just added for debugging - can be removed
     
-    if ((currentTime % 1000) == 0) {
+    if ((currentTime % 20000) == 0) {
       logRunningAverage();
       scheduler->print();
     }

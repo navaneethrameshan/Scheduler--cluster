@@ -237,6 +237,7 @@ bool Worker::moveJobToMemory() {
       state.available_memory -= (*i).getMemoryConsumption();
 
       // add swap cost
+      job_carry_over -= calculateSwappingTime(&(*i));
 
       jobs.pop_front();
       return true;
@@ -331,12 +332,12 @@ void Worker::compute() {
       removeJob();
     }
 
-    if ((currentTime % 5) == 0) {
+    if ((currentTime % 5000) == 0) {
       if (current_job == NULL) {
         logger->debug("No job to swap out, starting new");
         startJob();
       } else {
-        logger->debugInt("Swapping out", current_job->getJobID());
+        logger->debugInt("swapping out", current_job->getJobID());
         swapJob();    
       }
     }

@@ -353,7 +353,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
   //    if(getCurrentTime()%100 == 0)
   //  {
   //DEBUG statement
-  cout<<s.str()<<endl; //TODO: should be sent to logger instead
+  //cout<<s.str()<<endl; //TODO: should be sent to logger instead
   //  }
   
 }
