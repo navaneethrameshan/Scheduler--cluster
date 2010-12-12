@@ -4,6 +4,7 @@
 #include "job.h"
 #include "Scheduler.h"
 #include "logger.h"
+#include <map>
 
 class Scheduler;
 extern unsigned long currentTime;
@@ -46,7 +47,7 @@ class Worker {
   float job_carry_over;
   int tmp_job_size;
   unsigned int time_to_swap;
-  
+
   void initialise();
   void compute();
   void swap();
@@ -67,6 +68,7 @@ class Worker {
   bool swapInMemory();
   unsigned int calculateSwappingTime(Job *job);
   void debugJobs();
+  std::map<Job *, int> getJobFootprints();
 
  public:
   Worker(int id, WORKER_PROPERTIES *props, Scheduler *sched);
@@ -86,7 +88,7 @@ class Worker {
   float getTotalCost();
   int getQueuedJobs();
   bool ping();
-  bool cancelJob(unsigned int jobId);
+  bool cancelJob(unsigned int taskId, unsigned int jobId);
 
 //added by wasif
 unsigned int getWorkerID();

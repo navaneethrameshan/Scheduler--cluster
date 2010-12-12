@@ -165,15 +165,15 @@ int Worker::getQueuedJobs() {
   return (int)jobs.size();
 }
 
-bool Worker::cancelJob(unsigned int jobId) {
-  if (current_job->getJobID() == jobId) {
+bool Worker::cancelJob(unsigned int taskId, unsigned int jobId) {
+  if ((current_job->getJobID() == jobId) && (current_job->getTaskID() == taskId)) {
     removeJob();
     return true;
   }
 
   list<Job>::iterator job;
   for (job = jobs.begin(); job != jobs.end(); ++job) {
-    if ((*job).getJobID() == jobId) {
+    if (((*job).getJobID() == jobId) && (*job).getTaskID() == taskId) {
       jobs.erase(job);
       job--;
       return true;
@@ -323,6 +323,16 @@ void Worker::compute() {
   }  
 
   if (current_job != NULL) {
+
+    map<Job *, int> fp = getJobFootprints();
+    map<Job *, int>::iterator it; 
+    for(it = fp.begin(); it != fp.end(); ++it)
+      {
+        cout << ((*it).first)->getJobID() << "-+-" << (*it).second << endl;
+      }
+
+
+
     float completed = getInstructionsPerTime() + job_carry_over;
     job_carry_over = 
       current_job->addInstructionsCompleted(completed);
@@ -391,6 +401,18 @@ unsigned int Worker::calculateSwappingTime(Job *job) {
   if (swaptime % 1024 > 0)
     swaptime++;
   return swaptime / 1024;
+}
+
+std::map<Job *, int> Worker::getJobFootprints() {
+  map<Job *, int> footprint; 
+  list<Job>::iterator i; 
+  for (i = ram.begin(); i != ram.end(); ++i) {
+    footprint[&(*i)] = (*i).getMemoryConsumption();
+  }
+  if (current_job != NULL) {
+    footprint[current_job] = current_job->getMemoryConsumption();
+  }
+  return footprint;
 }
 
 void Worker::setProperties(WORKER_PROPERTIES *props) {
