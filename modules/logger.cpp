@@ -82,6 +82,7 @@ void Logger::totals(int job_count, long exec, long cpu, float cost, double avgti
         << "Number of jobs:\t\t" << job_count << "\n"
         << "Total:\t\t\t" << cpu << "s\n"
         << "Active:\t\t\t" << exec << "s\n"
+        << "Unused:\t\t\t" << cpu-exec << "s\n"
         << "Cost: \t\t\t" << cost << " Euro\n"
         << "Job avg response time: \t" << avgtime << "s\n"
         << "Standard deviation: \tXXs\n" 
