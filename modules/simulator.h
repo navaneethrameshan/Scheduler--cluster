@@ -22,6 +22,8 @@ struct SIMULATOR_CONFIG {
   float worker_node_startup_time;
   float worker_node_sched_notif_time;
   float worker_node_cost;
+  int sliding_window; // seconds
+  int polling_interval; // seconds
 };
 
 class Simulator {  
@@ -29,6 +31,7 @@ class Simulator {
   Logger* logger;
   list<Task > tasklist;
   list<Worker *> workers;
+  list<double> slidingWindow;
   bool stopping;
   SIMULATOR_CONFIG* config;
 
@@ -39,6 +42,7 @@ class Simulator {
   void logRunningAverage();
   void logTotals();
   SIMULATOR_CONFIG* readSimulatorConfig();
+  double getWorkerAverages();
 
  public:
   Simulator();
