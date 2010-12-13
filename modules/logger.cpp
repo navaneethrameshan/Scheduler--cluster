@@ -76,9 +76,10 @@ void Logger::workerAverage(double avg_response_time, float cost,
   write(entry.str());
 }
 
-void Logger::totals(long exec, long cpu, float cost, double avgtime) {
+void Logger::totals(int job_count, long exec, long cpu, float cost, double avgtime) {
   stringstream entry;
   entry << "---------------- [SIMULATOR] ----------------- \n" 
+        << "Number of jobs:\t\t" << job_count << "\n"
         << "Total:\t\t\t" << cpu << "s\n"
         << "Active:\t\t\t" << exec << "s\n"
         << "Cost: \t\t\t" << cost << " Euro\n"

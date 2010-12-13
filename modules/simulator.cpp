@@ -308,7 +308,8 @@ void Simulator::logTotals() {
     
   avg_response_time = avg_response_time / job_count;
   
-  logger->totals(totalExecutionTime/1000, // ms to s
+  logger->totals(job_count,
+                 totalExecutionTime/1000, // ms to s
                  totalCPUTime/1000, // ms to s
                  totalCost, 
                  avg_response_time/1000);
