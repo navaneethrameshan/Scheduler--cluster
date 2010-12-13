@@ -22,6 +22,8 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   logger = Logger::getLogger();
 }
 
+/*! Executed by the simulator. Checks the worker's current state and 
+performs all the work to be done in this time instant. */ 
 void Worker::execute() {
   switch (state.current) {
   case INITIALISING: 
@@ -54,17 +56,22 @@ void Worker::execute() {
 }
 
 /* API towards scheduler */
+
+/*! Used by the scheduler to start a new worker node. It wont be usable until 
+it moves to state IDLE which happens only after a specified (see configuration 
+file) time.  */
 bool Worker::startWorker() {
   state.started = currentTime;
   return setState(INITIALISING, false);
 }
 
+/*! Sets the worker state to OFFLINE after a shutdown period */
 bool Worker::stopWorker() {
   state.started = 0;
   return setState(FINALISING, false);
 }
 
-/* currently accepts all jobs even if all wont fit */ 
+/*! Multiple jobs can be sumbitted to a worker when a list is passed. This is used by the scheduler. It returns false in case it cannot accept the job. */
 bool Worker::submitJobs(list<Job> newjobs) {
   if (isAcceptingJobs()) {
     list<Job>::iterator newjob;
@@ -78,30 +85,40 @@ bool Worker::submitJobs(list<Job> newjobs) {
     return false;
 }
 
+/*! Retrieve worker's current state */
 enum worker_states Worker::getState() {
   return state.current;
 }
 
+/*! Retrieve worker's available memory, based on jobs currently stored in memory. */
 int Worker::getAvailableMemory() {
   return state.available_memory;
 }
 
+/*! Check whether a worker is accepting jobs or not */
 bool Worker::isAcceptingJobs() {
   return state.accepting_jobs;
 }
 
+/*! How much memory does a worker have in total. This value never changes 
+  during exectution.  */
 int Worker::getTotalMemory() {
   return properties.memory;
 }
 
+/*! How much does a worker cost per hour. This value never changes during 
+   execution. */
 float Worker::getCostPerHour() {
   return properties.cost_per_hour;
 }
 
+/*! How many instructions is a worker able to perform per ms. Never changes 
+   during an execution. */
 float Worker::getInstructionsPerTime() {
   return (float)properties.instructions_per_time/1000;
 }
 
+/*! Returns the worker ID */ 
 unsigned int Worker::getWorkerID()
 {
   return id;
@@ -114,13 +131,16 @@ bool Worker::ping() {
           state.current == INITIALISING);
 }
 
+/*! Get total time spent doing useful work since machine started. In ms. */
 long Worker::getTotalExecutionTime() {
   return total_execution_time;
 }
 
+/*! Get total execution time since worker started. */
 long Worker::getTotalCPUTime() {
   return total_cpu_time;
 }
+
 
 double Worker::getAverageResponseTime() {
   double avg = 1;
