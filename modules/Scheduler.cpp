@@ -23,6 +23,11 @@ Scheduler::Scheduler(string scheduler_mode, float scheduling_interval,
   this->scheduler_mode = scheduler_mode;
   this->scheduling_interval = scheduling_interval;
   this->scheduling_interval_for_clock = interval_for_clock;
+  sum_of_job_duration=0;
+  total_job_count=0;
+  fastest_job_time=1000000;
+  avg_job_duration=0;
+  slowest_job_time=-1;;
 
   print();
 
@@ -340,6 +345,10 @@ Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
 
 void Scheduler::runWebModeScheduler() 
 {
+  //gathering statistics for all workers so that we have a fresh view of all workers
+  gatherStatisticsFromAllWorkers();
+  cout<<"["<<getCurrentTime()<<"[AVGRESPTIME]"<<getAverageJobDuration()/1000<<endl;
+
   if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
     {
       log->decision("Schedeuler is relaxing because there is no work to do, literally.");
@@ -366,6 +375,7 @@ void Scheduler::runWebModeScheduler()
 	    bool successfully_submitted =  bestWorker->submitJobs(jobs_to_submit);
 	    if (successfully_submitted) 
 	      {
+		job.setStartTime();
 		WorkerStatistics *ws = getWorkerStatsForWorker(bestWorker->getWorkerID());
 		ws->incrementSubmittedJobs(getCurrentTime());
 		runningJobs.push_back(job);
@@ -373,8 +383,8 @@ void Scheduler::runWebModeScheduler()
 	    else {//we werent able to submit job to worker so putting it back to the queuedJobs list
 	      queuedJobs.push_back(job);
 	      stringstream s;
-	      s<<"Couldn't submit JobID"<<job.getJobID()<<
-		" to the best Worker "<<bestWorker->getWorkerID();
+	      s<<"Couldn't submit job_id "<<job.getJobID()<<
+		" to the worker "<<bestWorker->getWorkerID();
 		log->decision(s.str());
 	    }
 	    qsize--;
@@ -400,8 +410,6 @@ int Scheduler::runScheduler()
 
     if(scheduler_mode == "S")
       {
-	//running the roundrobin scheduler
-	//runRoundRobinScheduler();	
 	runSingleTaskScheduler();
       }
     
@@ -409,8 +417,14 @@ int Scheduler::runScheduler()
       {
 	//running the web mode scheduler
 	runWebModeScheduler();
+
       }
     
+    else if(scheduler_mode == "R")
+   {
+	//running the round robin scheduler
+	runRoundRobinScheduler();
+   }
     //gathering statistics of all workers
     gatherStatisticsFromAllWorkers();
     
@@ -441,6 +455,7 @@ WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
 //! A Worker node will notify the Scheduler when a job finishes its execution
 int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, int workerid)
 {
+
   //find the job_id in the runningJobs List
   list<Job >::iterator i;
   for(i=runningJobs.begin();i!=runningJobs.end();++i)
@@ -453,19 +468,31 @@ int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, in
 		  taskTimeAverage[(*i).getTaskID()] = (taskTimeAverage[(*i).getTaskID()] + ((*i).getEndTime() - (*i).getStartTime())) /
 												taskJobCount[(*i).getTaskID()];
 		  
-		  cout << (*i).getEndTime()/1000 << " End +-- Start " << (*i).getStartTime()/1000 << endl;
+		  //		  cout << (*i).getEndTime()/1000 << " End +-- Start " << (*i).getStartTime()/1000 << endl;
 		  
 		  map<int,int>::iterator it;
 		  cout << "foo contains:\n";
 		  for ( it=taskTimeAverage.begin() ; it != taskTimeAverage.end(); it++ )
-			  cout << (*it).first << " TaskId +--Avg. Time " << (*it).second/1000 << endl;
+		    // cout << (*it).first << " TaskId +--Avg. Time " << (*it).second/1000 << endl;
 		  
-		  
+
+	    /*
+	     * calculating interesting values for WebModeScheduler
+	     */
+
+	    long jobduration = (*i).getEndTime() - (*i).getStartTime();
+		  cout<<jobduration<<endl;
+	    calculateAverageJobDuration(jobduration);
+	    calculateFastestJobTime(jobduration);
+	    calculateSlowestJobTime(jobduration);
+
+	    /*Finished calculating values for WebMode Scheduler*/
 		  
 	    completedJobs.push_back(*i); //marking the job as complete
 	    runningJobs.erase(i); //erasing the job from runningJobs 
 	    --i; 
 	    
+
 	    WorkerStatistics *ws = getWorkerStatsForWorker(workerid);
 	    ws->decrementSubmittedJobs(getCurrentTime());
 
@@ -508,7 +535,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
   //    if(getCurrentTime()%100 == 0)
   //  {
   //DEBUG statement
-  //cout<<s.str()<<endl; //TODO: should be sent to logger instead
+  cout<<s.str()<<endl; //TODO: should be sent to logger instead
   //  }
   
 }
@@ -517,10 +544,53 @@ bool Scheduler::areAllJobsCompleted() {
   return ((queuedJobs.size() + runningJobs.size()) == 0);
 }
 
+
+
+  /*
+    WEB MODE SCHEDULING - methods
+   */
+
+void Scheduler::calculateAverageJobDuration(long jobduration) 
+{
+  total_job_count++;
+  sum_of_job_duration += jobduration;
+  //avg_job_duration = (avg_job_duration+jobduration)/2;
+  avg_job_duration = sum_of_job_duration/total_job_count;
+}
+  void Scheduler::calculateFastestJobTime(long jobduration)
+  {
+    if(jobduration < fastest_job_time)
+      fastest_job_time = jobduration;
+  }
+  void Scheduler::calculateSlowestJobTime(long jobduration)
+  {
+    if(jobduration > slowest_job_time)
+      slowest_job_time = jobduration;
+  }
+  
+  long Scheduler::getAverageJobDuration()
+  {
+    return ceil(avg_job_duration);
+  }
+long Scheduler::getFastestJobTime()
+  {
+    //returns 1000000 if no job has completed yet
+    return fastest_job_time;
+  }
+long Scheduler::getSlowestJobTime()
+  {
+    //returns -1 if no job has completed yet
+    return slowest_job_time;
+  }
+
+
+
   //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
 void Scheduler::print()
 {
-  log->status(scheduler_mode, scheduling_interval, 
+  
+  
+log->status(scheduler_mode, scheduling_interval, 
               (int)queuedJobs.size(),
               (int)runningJobs.size(),
               (int)completedJobs.size());

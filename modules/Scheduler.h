@@ -96,11 +96,36 @@ class Scheduler {
   //returns the best worker in terms of available memory - you should have guessed
   Worker* getBestWorkerInTermsOfAvailableMemory();
 
+
+  /*
+    WEB MODE SCHEDULING
+   */
+
   //runs the Web Mode scheduler
   void runWebModeScheduler();
   
   //runs Single Task scheduler
   void runSingleTaskScheduler();
+
+
+  long total_job_count;
+  long sum_of_job_duration;
+  long fastest_job_time;
+  long avg_job_duration;
+  long slowest_job_time;
+
+  //calculate the average job duration - called every time a job completes 
+  void calculateAverageJobDuration(long jobduration);
+  //calculate the fastest job time - called every time a job completes 
+  void calculateFastestJobTime(long jobduration);
+  //calculate the slowest job time - called every time a job completes 
+  void calculateSlowestJobTime(long jobduration);
+  
+  //get the  (average, median, fastest job, slowest job)
+  long getAverageJobDuration();
+  long getFastestJobTime();
+  long getSlowestJobTime();
+
 
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();
