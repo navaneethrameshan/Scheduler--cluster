@@ -161,7 +161,7 @@ void Scheduler::runRoundRobinScheduler()
 			  }
 			
 		      }
-j++;
+		j++; //workers list iterator
 
 	      }
 
@@ -356,15 +356,19 @@ Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
 void Scheduler::runWebModeScheduler() 
 {
 
+  //TODO: time calculation should also include the number of jobs running on the worker node
 
   //TODO: declare all funcs used here in Scheduler.h
 
   //gathering statistics for all workers so that we have a fresh view of all workers
-  gatherStatisticsFromAllWorkers();
-  cout<<"["<<getCurrentTime()<<"[AVGRESPTIME] "<<getAverageJobDuration()/1000<<endl;
+  //    gatherStatisticsFromAllWorkers();
+
+
+  cout<<"["<<getCurrentTime()<<"][AVGRESPTIME] "<<getAverageJobDuration()/1000<<endl;
 
   //sending Spilled Jobs (if any)
   tryToSendSpilledJobs();
+  // cout<<"Webmode crashed? after function call?\n";
 
   //switch off idle workers if required
   switchOffIdleWorkers();
@@ -380,18 +384,30 @@ void Scheduler::runWebModeScheduler()
 	{
 	  //running the round robin scheduler if no job has completed yet
 	  runRoundRobinScheduler();
-	}
-      else {
+	  cout<<getCurrentTime()<<" Webmode round roubin scheduler executed\n";
+	 	}
+      else if( (int)queuedJobs.size() > 0 ) 
+	{
 	//getting the size of queuedJobs
 	int qsize = queuedJobs.size();
-	int num_of_workers = workers.size();
+	
 	list<Worker *>::iterator ww;
 	int spilled_over_jobs=0;
+	int wcount=0;
+	
+	for(ww=workers.begin();ww!=workers.end();ww++)
+	  {
+	    if((*ww)->isAcceptingJobs() || (*ww)->getState() != OFFLINE )
+	      {
+		wcount++;
+	      }
+	  }
+	int num_of_workers = wcount;
 	
 	//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
 	for(ww=workers.begin();ww!=workers.end();ww++)
 	  {
-	    if((*ww)->isAcceptingJobs())
+	    if((*ww)->isAcceptingJobs() || (*ww)->getState() != OFFLINE )
 	      {
 	    int wid = (*ww)->getWorkerID();
 	    long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
@@ -431,6 +447,8 @@ void Scheduler::runWebModeScheduler()
 		/*sending jobs code ends here*/
 				
 		spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
+		cout<<getCurrentTime()<<" Webmode spilled_over_jobs accumulated: "<<
+		  spilled_over_jobs<<endl;
 	      }
 	    else
 	      {
@@ -485,10 +503,10 @@ void Scheduler::runWebModeScheduler()
 	 */
 	  }
 	    
-	    if(spilled_over_jobs > 5) 
+	if(spilled_over_jobs > 0) //TODO: need to fine tune this value 
 	      {
-		cout<<"Webmode Get slowest job in seconds: "<<
-		  getSlowestJobTime()/1000<<
+		cout<<"Webmode Get slowest job in milliseconds: "<<
+		  getSlowestJobTime()<<
 		  endl;
 
 		cout<<"Webmode spilled_jobs "<<
@@ -577,12 +595,27 @@ Worker* Scheduler::getWorkerObject(int wid)
 void Scheduler::tryToSendSpilledJobs()
 {
 
+  
+  /*
+  int mapSize = spilledJobsMap.size();
+  int mapcount=0;
+  while(mapcount < mapSize)
+    {
+      map<int, list<Job> >::iterator spilledJobsMap.begin();
+    }*/
+  if(spilledJobsMap.size() > 0) {
+    cout<<"Webmode SpilledJobsMap size: "<<spilledJobsMap.size()<<endl;
+
+
+    
   map<int,list<Job> >::iterator it;
   for(it=spilledJobsMap.begin();it!=spilledJobsMap.end();it++)
     {
       list<Job> jobs = (*it).second;
+      int num_jobs = jobs.size();
       int wid = (*it).first;
       Worker *worker = getWorkerObject(wid);
+      int wid_copy = worker->getWorkerID();
 
       /*sending jobs to this worker*/
       bool successful = worker->submitJobs(jobs);
@@ -590,26 +623,35 @@ void Scheduler::tryToSendSpilledJobs()
 	{
 	  //marking the jobs as started
 	  markJobsAsStarted(jobs, wid);
-
+	  
 	  //erasing the entry from the map
 	  spilledJobsMap.erase(wid);
+	  cout<<"Webmode crashed?\n";
+	  //it--;
 
 	  stringstream s;
-	  s<<"Submitted "<<jobs.size()<<
-	    " spilled jobs to worker "<<wid<<endl;
-	  log->decision(s.str());
+	  s<<getCurrentTime()<<"Webmode Submitted "<<num_jobs<<
+	    " spilled jobs to worker "<<wid_copy<<endl;
+	  cout<<getCurrentTime()<<" Webmode Submitted "<<num_jobs<<
+	    " spilled jobs to worker "<<wid_copy<<endl;
+	  	  log->decision(s.str());
+	   cout<<"Webmode crashed after log decision?\n";
+	   break;
 	}
       else
 	{
+	   cout<<"Webmode crashed in else?\n";
 	  stringstream s;
-	  s<<"Unable to submit "<<jobs.size()<<
+	  s<<getCurrentTime()<<"Webmode Unable to submit "<<jobs.size()<<
 		      " spilled jobs to worker "<<wid<<endl;
 	  log->decision(s.str());		   
 	}
       /*sending jobs code ends here*/
-      
+      cout<<"\n\nWebmode crashed after if else?\n";
       
     }
+
+  }
   
 }
 
@@ -710,7 +752,7 @@ int Scheduler::runScheduler()
 	runRoundRobinScheduler();
    }
     //gathering statistics of all workers
-    gatherStatisticsFromAllWorkers();
+    //gatherStatisticsFromAllWorkers();
     
   }
   
