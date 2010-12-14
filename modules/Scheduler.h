@@ -40,6 +40,7 @@ class Scheduler {
   list<Job > completedJobs; //Contains jobs which have been completed
   list<Job > runningJobs;   //Contains jobs which are currently in running state
   list<WorkerStatistics *> workerStats; //Contains stats for each worker node
+  map< int, list<Job> > spilledJobsMap;
 
   list<Worker *>::iterator j; //iterator used by runScheduler() function
 	map<int,int> getJobAwayTime();
@@ -96,6 +97,10 @@ class Scheduler {
   //returns the best worker in terms of available memory - you should have guessed
   Worker* getBestWorkerInTermsOfAvailableMemory();
 
+  //runs Single Task scheduler
+  void runSingleTaskScheduler();
+
+
 
   /*
     WEB MODE SCHEDULING
@@ -103,9 +108,16 @@ class Scheduler {
 
   //runs the Web Mode scheduler
   void runWebModeScheduler();
-  
-  //runs Single Task scheduler
-  void runSingleTaskScheduler();
+
+
+  long timeTillNextChargingTick(Worker* worker);
+  void switchOffIdleWorkers();
+  Worker* getWorkerObject(int wid);
+  void tryToSendSpilledJobs();
+  void markJobsAsStarted(list<Job> jobsForThisWorker, int wid);
+  int getMaxWorkerID();
+  list<int> startupNewWorkers(int num_nodes);
+  list<Job> fetchJobsFromQueue(int num_jobs);
 
 
   long total_job_count;
