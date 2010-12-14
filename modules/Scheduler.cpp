@@ -161,7 +161,7 @@ void Scheduler::runRoundRobinScheduler()
 			  }
 			
 		      }
-j++;
+		j++; //workers list iterator
 
 	      }
 
@@ -356,11 +356,14 @@ Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
 void Scheduler::runWebModeScheduler() 
 {
 
+  //TODO: time calculation should also include the number of jobs running on the worker node
 
   //TODO: declare all funcs used here in Scheduler.h
 
   //gathering statistics for all workers so that we have a fresh view of all workers
-  gatherStatisticsFromAllWorkers();
+  //  gatherStatisticsFromAllWorkers();
+
+
   cout<<"["<<getCurrentTime()<<"[AVGRESPTIME] "<<getAverageJobDuration()/1000<<endl;
 
   //sending Spilled Jobs (if any)
@@ -376,10 +379,12 @@ void Scheduler::runWebModeScheduler()
     }
   else 
     {
-      if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
+      if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) && runningJobs.size() < 100 ) 
 	{
 	  //running the round robin scheduler if no job has completed yet
 	  runRoundRobinScheduler();
+	  cout<<getCurrentTime()<<" Webmode round roubin scheduler executed\n";
+	  cout<<"Webmode slowest job time: "<<getSlowestJobTime()<<endl;
 	}
       else {
 	//getting the size of queuedJobs
@@ -431,6 +436,8 @@ void Scheduler::runWebModeScheduler()
 		/*sending jobs code ends here*/
 				
 		spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
+		cout<<"Webmode spilled_over_jobs accumulated: "<<
+		  spilled_over_jobs<<endl;
 	      }
 	    else
 	      {
@@ -485,7 +492,7 @@ void Scheduler::runWebModeScheduler()
 	 */
 	  }
 	    
-	    if(spilled_over_jobs > 5) 
+	if(spilled_over_jobs > 0) //TODO: need to fine tune this value 
 	      {
 		cout<<"Webmode Get slowest job in seconds: "<<
 		  getSlowestJobTime()/1000<<
@@ -710,7 +717,7 @@ int Scheduler::runScheduler()
 	runRoundRobinScheduler();
    }
     //gathering statistics of all workers
-    gatherStatisticsFromAllWorkers();
+    //gatherStatisticsFromAllWorkers();
     
   }
   
