@@ -301,8 +301,9 @@ void Simulator::logTotals() {
     map<long,int> times = (*worker)->getCompletionTimes(0);
     for (it = times.begin(); it != times.end(); ++it) {
       avg_response_time += (*it).second;
-      job_count++;
     } 
+
+    job_count += (*worker)->getJobsCompleted();
 
   }
     

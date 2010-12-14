@@ -29,6 +29,7 @@ struct WORKER_STATE {
   long time_spent; //unused
   int available_memory;
   bool accepting_jobs;
+  int jobs_completed; 
 };
 
 class Worker {
@@ -92,6 +93,7 @@ class Worker {
   bool ping();
   bool cancelJob(unsigned int taskId, unsigned int jobId);
   std::map<long,int> getCompletionTimes(int windowSize); 
+  int getJobsCompleted();
 
 //added by wasif
 unsigned int getWorkerID();

@@ -12,6 +12,7 @@ Worker::Worker(int worker_id, WORKER_PROPERTIES *props, Scheduler *sched) {
   state.start = 0;
   state.accepting_jobs = false;
   state.time_spent = 0;
+  state.jobs_completed = 0;
   setProperties(props);
   state.available_memory = properties.memory; 
   current_job = NULL;
@@ -88,6 +89,10 @@ bool Worker::submitJobs(list<Job> newjobs) {
 /*! Retrieve worker's current state */
 enum worker_states Worker::getState() {
   return state.current;
+}
+
+int Worker::getJobsCompleted() {
+  return state.jobs_completed;
 }
 
 /*! Retrieve worker's available memory, based on jobs currently stored in memory. */
@@ -326,6 +331,7 @@ bool Worker::swapJob() {
 
 void Worker::removeJob() {
   state.available_memory += current_job->getMemoryConsumption();
+  state.jobs_completed++;
   job_completion[currentTime] = (currentTime - current_job->getStartedTime());
   current_job = NULL;
   job_carry_over = 0;
