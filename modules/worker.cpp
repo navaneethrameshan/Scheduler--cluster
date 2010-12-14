@@ -333,7 +333,7 @@ void Worker::removeJob() {
 }
 
 void Worker::initialise() {
-  if ((currentTime-state.start) == properties.time_to_startup) {
+  if ((currentTime-state.start) == properties.time_to_startup*1000) {
     logger->workerInt("Started Worker (ID)", getWorkerID());
     setState(IDLE, true);
     if (hasMoreWork()) {
