@@ -356,6 +356,7 @@ void Worker::compute() {
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
       logger->workerInt("Removing job", current_job->getJobID());
       job_carry_over -= properties.notification_time;
+      cout<<"MARCUS Before notifyJob in Worker"<<endl;
       scheduler->notifyJobCompletion(current_job->getTaskID(), 
                                      current_job->getJobID(), id); 
       removeJob();

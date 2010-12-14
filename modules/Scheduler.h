@@ -40,6 +40,7 @@ class Scheduler {
   list<Job > completedJobs; //Contains jobs which have been completed
   list<Job > runningJobs;   //Contains jobs which are currently in running state
   list<WorkerStatistics *> workerStats; //Contains stats for each worker node
+  map< int, list<Job> > spilledJobsMap;
 
   list<Worker *>::iterator j; //iterator used by runScheduler() function
 	map<int,int> getJobAwayTime();
@@ -96,11 +97,47 @@ class Scheduler {
   //returns the best worker in terms of available memory - you should have guessed
   Worker* getBestWorkerInTermsOfAvailableMemory();
 
-  //runs the Web Mode scheduler
-  void runWebModeScheduler();
-  
   //runs Single Task scheduler
   void runSingleTaskScheduler();
+
+
+
+  /*
+    WEB MODE SCHEDULING
+   */
+
+  //runs the Web Mode scheduler
+  void runWebModeScheduler();
+
+
+  long timeTillNextChargingTick(Worker* worker);
+  void switchOffIdleWorkers();
+  Worker* getWorkerObject(int wid);
+  void tryToSendSpilledJobs();
+  void markJobsAsStarted(list<Job> jobsForThisWorker, int wid);
+  int getMaxWorkerID();
+  list<int> startupNewWorkers(int num_nodes);
+  list<Job> fetchJobsFromQueue(int num_jobs);
+
+
+  long total_job_count;
+  long sum_of_job_duration;
+  long fastest_job_time;
+  long avg_job_duration;
+  long slowest_job_time;
+
+  //calculate the average job duration - called every time a job completes 
+  void calculateAverageJobDuration(long jobduration);
+  //calculate the fastest job time - called every time a job completes 
+  void calculateFastestJobTime(long jobduration);
+  //calculate the slowest job time - called every time a job completes 
+  void calculateSlowestJobTime(long jobduration);
+  
+  //get the  (average, median, fastest job, slowest job)
+  long getAverageJobDuration();
+  long getFastestJobTime();
+  long getSlowestJobTime();
+
 
   // outputs the current state of a Scheduler object (can be static also; will be decided later on)
   void print();

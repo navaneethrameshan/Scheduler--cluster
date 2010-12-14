@@ -98,8 +98,9 @@ void Simulator::execute() {
 
     currentTime++;
   }
-  //scheduler->print();   
-  //scheduler->printSummary();
+
+  scheduler->print();   
+  scheduler->printSummary();
   cleanUp();
 }
 
@@ -143,8 +144,8 @@ bool Simulator::readWorkers(Scheduler *scheduler) {
     }
   infile.close();
 
-  int started_workers = strtod(values[0].c_str(), NULL);
-  int workers_to_create = strtod(values[1].c_str(),NULL);
+  int started_workers = strtod(values[0].c_str(), NULL); //5
+  int workers_to_create = strtod(values[1].c_str(),NULL); //10
 
   WORKER_PROPERTIES* properties = new WORKER_PROPERTIES;
   properties->memory = (int)config->worker_node_memory * 1024;
