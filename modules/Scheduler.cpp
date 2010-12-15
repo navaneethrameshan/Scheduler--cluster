@@ -409,6 +409,7 @@ void Scheduler::runWebModeScheduler()
 			
 			int qsize = queuedJobs.size();
 			
+			//TODO: improvement: If there are 4 jobs and 10 workers, all 4 jobs sent to first worker. Instead send 4 jobs to 4 workers, 1 each.
 			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
 			for(ww=workers.begin();ww!=workers.end();ww++)
 			{
@@ -421,18 +422,23 @@ void Scheduler::runWebModeScheduler()
 					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
 					
 					//cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
+					cout<<"Webmode jobs_per_worker "<<jobs_per_worker<<endl;
 					cout<<"Webmode worst_time_for_jobs: "<<worst_time_required_for_jobs_in_q<<endl;
 					cout<<"Webmode time_until_next_tick: "<<time_until_next_charging_tick<<endl;
 					
 					/*checking if we need new nodes or not*/
-					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick)
+					//if jobs_per_worker < no of workers, should send jobs only to jobs_per_worker no. of workers. To do this
+					//whenever there is no element is queued jobs don't send.
+					
+					cout<<getCurrentTime()<<" queuedJobs.size() "<<queuedJobs.size()<<endl;
+					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick && queuedJobs.size() != 0)
 					{
 						cout<<"Webmode should spill"<<endl;
 						//now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
 						//int jobs_to_be_sent = (time_until_next_charging_tick/worst_time_required_for_jobs_in_q);
 						
 						int jobs_to_be_sent = (time_until_next_charging_tick/getSlowestJobTime());
-						
+						cout<<"Webmode Jobs to be sent: "<<jobs_to_be_sent<<endl;
 						cout<<getCurrentTime()<<" queuedJobs.size() 2:"<<queuedJobs.size()<<endl;
 						//fetching jobs from queue
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_to_be_sent);
@@ -464,7 +470,11 @@ void Scheduler::runWebModeScheduler()
 						cout<<getCurrentTime()<<" Webmode spilled_over_jobs accumulated: "<<
 						spilled_over_jobs<<endl;
 					}
-					else
+					
+					
+					//if jobs_per_worker < no of workers, should send jobs only to jobs_per_worker no. of workers. To do this
+					//whenever there is no element is queued jobs don't send.
+					else if (queuedJobs.size() != 0) 
 					{
 						//means that the jobs_per_worker are feasible for this worker
 						cout<<"jobs_per_worker "<<jobs_per_worker<<endl;
@@ -537,6 +547,7 @@ void Scheduler::runWebModeScheduler()
 				if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
 					int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
 					
+					//TODO: improvement: If there are 4 jobs and 10 workers, all 4 jobs sent to first worker. Instead send 4 jobs to 4 workers, 1 each.
 					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
 						Worker *wrkr = existingWorkers.front();
 						cout<<getCurrentTime()<<" queuedJobs.size() 4:"<<queuedJobs.size()<<endl;
@@ -588,7 +599,7 @@ void Scheduler::runWebModeScheduler()
 				endl;
 				
 				//TODO: for improvement
-				// all jobs_per_worker (also in all of above) calculations will result in one excess job if jobs_per_worker/num_of_workers doesnt divide perfectly
+				// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
 				// however the algorithm will work since the excess jobs will remain in queuedJobs
 			
 				int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
