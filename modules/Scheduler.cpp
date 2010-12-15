@@ -8,7 +8,7 @@
 #include "WorkerStatistics.h"
 using namespace std;
 
-#define CHARGINGTIME 60*1000
+#define CHARGINGTIME 60*60*1000
 
 int milliseconds; 
 list<Worker *>::iterator j;
@@ -558,6 +558,7 @@ void Scheduler::runWebModeScheduler()
 						cout<<getCurrentTime()<<" queuedJobs.size() 4:"<<queuedJobs.size()<<endl;
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
 						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
+						
 						cout<<"Webmode if spill sjobs size before splicing: "<<sjobs.size()<<endl;
 						list<Job>::iterator it;
 						it = sjobs.begin();
@@ -594,11 +595,11 @@ void Scheduler::runWebModeScheduler()
 					
 					//calculating the time(in milliseconds) required for spilled over jobs
 					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
-					cout<<"Webmode time_for_spilled_jobs (in minutes): "<<
+					cout<<"Webmode time_for_spilled_jobs (in milliseconds): "<<
 					time_for_spilled_jobs<<
 					endl;
 					
-					int workers_to_be_started = ceil(((double)time_for_spilled_jobs/CHARGINGTIME ));
+					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
 					cout<<"Webmode workers_to_be_started "<<
 					workers_to_be_started<<
 					endl;
@@ -614,7 +615,7 @@ void Scheduler::runWebModeScheduler()
 					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
 					
 					stringstream s;
-					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
+					s<<"Webmode Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
 					log->decision(s.str());
 					
 					//TODO: problem: Handle case where, if the no. of workers to be started is more than the no. of workers in the config file.
@@ -819,7 +820,9 @@ list<Job> Scheduler::fetchJobsFromQueue(int num_jobs)
 	return fetchedJobs;
 }
 bool Scheduler::isScheduleTime() {
-	return (  ((milliseconds)%scheduling_interval_for_clock == 0) || (milliseconds == 1)   );
+
+  return (  (milliseconds)%(short)(scheduling_interval*1000) == 0) || (milliseconds == 1   );
+
 }
 
 //! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
@@ -880,7 +883,7 @@ WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
 //! A Worker node will notify the Scheduler when a job finishes its execution
 int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, int workerid)
 {
-	cout<<"BOATARDE!"<<endl;
+  //cout<<"BOATARDE!"<<endl;
 	//find the job_id in the runningJobs List
 	list<Job >::iterator i;
 	for(i=runningJobs.begin();i!=runningJobs.end();++i)
@@ -897,7 +900,7 @@ int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, in
 			//		  cout << (*i).getEndTime()/1000 << " End +-- Start " << (*i).getStartTime()/1000 << endl;
 			
 			map<int,int>::iterator it;
-			cout << "foo contains:\n";
+			//			cout << "foo contains:\n";
 			//		  for ( it=taskTimeAverage.begin() ; it != taskTimeAverage.end(); it++ )
 		    // cout << (*it).first << " TaskId +--Avg. Time " << (*it).second/1000 << endl;
 			
@@ -912,6 +915,7 @@ int Scheduler::notifyJobCompletion(unsigned int task_id, unsigned int job_id, in
 			calculateFastestJobTime(jobduration);
 			calculateSlowestJobTime(jobduration);
 			
+			if(getCurrentTime()%10000 == 0)
 			cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
 			
 			/*Finished calculating values for WebMode Scheduler*/

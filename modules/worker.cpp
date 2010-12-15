@@ -77,7 +77,7 @@ bool Worker::submitJobs(list<Job> newjobs) {
   if (isAcceptingJobs()) {
     list<Job>::iterator newjob;
     for (newjob = newjobs.begin(); newjob != newjobs.end(); ++newjob) {
-      logger->workerInt("Job ID received", (*newjob).getJobID());
+      //logger->workerInt("Job ID received", (*newjob).getJobID());
       (*newjob).setStartedTime();
       jobs.push_back(*newjob); // todo: should check max size
     }
@@ -233,7 +233,7 @@ bool Worker::startJob() {
 
   if (activateJob()) {
     result = true;
-    logger->workerInt("Activated job", current_job->getJobID());
+    //logger->workerInt("Activated job", current_job->getJobID());
   }
 
   //debugJobs();
@@ -360,9 +360,9 @@ void Worker::compute() {
       current_job->addInstructionsCompleted(completed);
 
     if ((getTotalComputationTime() - current_job->getInstructionsCompleted()) <= 0) {
-      logger->workerInt("Removing job", current_job->getJobID());
+      //logger->workerInt("Removing job", current_job->getJobID());
       job_carry_over -= properties.notification_time;
-      cout<<"MARCUS Before notifyJob in Worker"<<endl;
+      //cout<<"MARCUS Before notifyJob in Worker"<<endl;
       scheduler->notifyJobCompletion(current_job->getTaskID(), 
                                      current_job->getJobID(), id); 
       removeJob();
@@ -371,10 +371,10 @@ void Worker::compute() {
 	  
     if ((currentTime % properties.quantum) == 0) {
       if (current_job == NULL) {
-        logger->debug("No job to swap out, starting new");
+        //logger->debug("No job to swap out, starting new");
         startJob();
       } else {
-        logger->debugInt("swapping out", current_job->getJobID());
+        //logger->debugInt("swapping out", current_job->getJobID());
         swapJob();    
       }
     }
@@ -383,7 +383,7 @@ void Worker::compute() {
 
 void Worker::swap() {
   if ((currentTime-state.start) == time_to_swap) {
-    logger->debugInt("Swap completed on", getWorkerID());
+    //logger->debugInt("Swap completed on", getWorkerID());
     startJob();
   }
 }
