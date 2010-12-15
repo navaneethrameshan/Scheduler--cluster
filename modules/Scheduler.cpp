@@ -151,11 +151,11 @@ void Scheduler::runRoundRobinScheduler()
 						queuedJobs.erase(i); //erasing the Job from the queuedJobs
 						i--; 
 						
-												
+						
 					}
 					
 				}
-
+				
 				j++; //workers list iterator
 				if(j == workers.end()) 
 				{
@@ -373,7 +373,7 @@ void Scheduler::runWebModeScheduler()
 	// cout<<"Webmode crashed? after function call?\n";
 	
 	//switch off idle workers if required
-//	switchOffIdleWorkers();
+	//	switchOffIdleWorkers();
 	
 	if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
     {
@@ -390,10 +390,6 @@ void Scheduler::runWebModeScheduler()
 	 	}
 		else if( (int)queuedJobs.size() > 0 ) 
 		{
-				cout<<getCurrentTime()<<" queuedJobs.size() 1: "<<queuedJobs.size()<<endl;
-			//getting the size of queuedJobs
-			
-			
 			list<Worker *>::iterator ww;
 			int spilled_over_jobs=0;
 			int wcount=0;
@@ -406,19 +402,22 @@ void Scheduler::runWebModeScheduler()
 				}
 			}
 			int num_of_workers = wcount;
-			
 			int qsize = queuedJobs.size();
+			long jobs_per_worker = ((qsize/num_of_workers) == 0 ?  1 : (qsize/num_of_workers));
 			
-			//TODO: improvement: If there are 4 jobs and 10 workers, all 4 jobs sent to first worker. Instead send 4 jobs to 4 workers, 1 each.
+			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
+			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
+			int count_for_jobs = queuedJobs.size(); 
+			
 			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
 			for(ww=workers.begin();ww!=workers.end();ww++)
 			{
 				
-				if((*ww)->isAcceptingJobs() /*|| (*ww)->getState() != OFFLINE*/ )
+				if((*ww)->isAcceptingJobs() && count_for_jobs>0 )
 				{
+					cout<<" Count remaining: "<< count_for_jobs <<endl;
 					int wid = (*ww)->getWorkerID();
 					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
-					long jobs_per_worker = ((qsize/num_of_workers) == 0 ? qsize : (qsize/num_of_workers));
 					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
 					
 					//cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
@@ -427,18 +426,24 @@ void Scheduler::runWebModeScheduler()
 					cout<<"Webmode time_until_next_tick: "<<time_until_next_charging_tick<<endl;
 					
 					/*checking if we need new nodes or not*/
-					//if jobs_per_worker < no of workers, should send jobs only to jobs_per_worker no. of workers. To do this
-					//whenever there is no element is queued jobs don't send.
+					
 					
 					cout<<getCurrentTime()<<" queuedJobs.size() "<<queuedJobs.size()<<endl;
-					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick && queuedJobs.size() != 0)
+					
+					//TODO: problem: when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
+					//jobs get accumulated, although they aren't removed from queue. CAN CAUSE MALLOC ERROR!! Temporarily,
+					// this problem is handled with the variable count_for_jobs.
+					
+					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick )
 					{
 						cout<<"Webmode should spill"<<endl;
 						//now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
 						//int jobs_to_be_sent = (time_until_next_charging_tick/worst_time_required_for_jobs_in_q);
 						
 						int jobs_to_be_sent = (time_until_next_charging_tick/getSlowestJobTime());
+						
 						cout<<"Webmode Jobs to be sent: "<<jobs_to_be_sent<<endl;
+						
 						cout<<getCurrentTime()<<" queuedJobs.size() 2:"<<queuedJobs.size()<<endl;
 						//fetching jobs from queue
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_to_be_sent);
@@ -472,13 +477,11 @@ void Scheduler::runWebModeScheduler()
 					}
 					
 					
-					//if jobs_per_worker < no of workers, should send jobs only to jobs_per_worker no. of workers. To do this
-					//whenever there is no element is queued jobs don't send.
-					else if (queuedJobs.size() != 0) 
+					else
 					{
 						//means that the jobs_per_worker are feasible for this worker
 						cout<<"jobs_per_worker "<<jobs_per_worker<<endl;
-					cout<<getCurrentTime()<<" queuedJobs.size() 3: "<<queuedJobs.size()<<endl;
+						cout<<getCurrentTime()<<" queuedJobs.size() 3: "<<queuedJobs.size()<<endl;
 						//fetching job objects from queue
 						
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
@@ -527,6 +530,8 @@ void Scheduler::runWebModeScheduler()
 				 *             are up.  
 				 *
 				 */
+				
+				count_for_jobs -- ;
 			}
 			
 			if(spilled_over_jobs > 0) //TODO: need to fine tune this value 
@@ -562,71 +567,71 @@ void Scheduler::runWebModeScheduler()
 					}
 					
 					else {//splitting the jobs evenly to all workers which are still booting up
-					list<Worker *>::iterator nw;
-					for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
-					{
-						cout<<getCurrentTime()<<" queuedJobs.size() 5:"<<queuedJobs.size()<<endl;
-						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
-						list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
-						cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
-						list<Job>::iterator it;
-						it = sjobs.begin();
-						sjobs.splice(it, jobsForThisWorker);
-						cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
+						list<Worker *>::iterator nw;
+						for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
+						{
+							cout<<getCurrentTime()<<" queuedJobs.size() 5:"<<queuedJobs.size()<<endl;
+							list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
+							list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
+							cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
+							list<Job>::iterator it;
+							it = sjobs.begin();
+							sjobs.splice(it, jobsForThisWorker);
+							cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
 							
-					}
+						}
 					}
 					
 				}
 				
 				
 				else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
-				cout<<"Webmode Get slowest job in milliseconds: "<<
-				getSlowestJobTime()<< endl;
-				
-				cout<<"Webmode spilled_jobs "<<
-				spilled_over_jobs<< endl;
-				
-				//calculating the time(in milliseconds) required for spilled over jobs
-				long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
-				cout<<"Webmode time_for_spilled_jobs (in minutes): "<<
-				time_for_spilled_jobs<<
-				endl;
-				
-				int workers_to_be_started = ceil(((double)time_for_spilled_jobs/CHARGINGTIME ));
-				cout<<"Webmode workers_to_be_started "<<
-				workers_to_be_started<<
-				endl;
-				
-				//TODO: for improvement
-				// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
-				// however the algorithm will work since the excess jobs will remain in queuedJobs
-			
-				int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
+					cout<<"Webmode Get slowest job in milliseconds: "<<
+					getSlowestJobTime()<< endl;
 					
-				//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
-				workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? jobs_per_new_worker : workers_to_be_started;
+					cout<<"Webmode spilled_jobs "<<
+					spilled_over_jobs<< endl;
 					
-				stringstream s;
-				s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
-				log->decision(s.str());
-				
-				list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
-				cout<<getCurrentTime()<<" Webmode Started "<<newWorkerIDs.size()<<" workers\n";
-				cout << "Jobs per new worker is: "<<jobs_per_new_worker<<endl;
-				list<int>::iterator n;
-				
-				//uniformly submitting jobs to the newWorkers
-				for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
-				{
-					cout<<getCurrentTime()<<" Webmode new worker created\n";
-					cout<<getCurrentTime()<<" queuedJobs.size() 6:"<<queuedJobs.size()<<endl;
-					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);
+					//calculating the time(in milliseconds) required for spilled over jobs
+					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
+					cout<<"Webmode time_for_spilled_jobs (in minutes): "<<
+					time_for_spilled_jobs<<
+					endl;
 					
-					//adding it in map. Will be removed when jobs are scheduled
-					spilledJobsMap[ (*n) ] = jobsForThisWorker;
+					int workers_to_be_started = ceil(((double)time_for_spilled_jobs/CHARGINGTIME ));
+					cout<<"Webmode workers_to_be_started "<<
+					workers_to_be_started<<
+					endl;
 					
-				}
+					//TODO: for improvement
+					// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
+					// however the algorithm will work since the excess jobs will remain in queuedJobs
+					
+					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
+					
+					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
+					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? jobs_per_new_worker : workers_to_be_started;
+					
+					stringstream s;
+					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
+					log->decision(s.str());
+					
+					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
+					cout<<getCurrentTime()<<" Webmode Started "<<newWorkerIDs.size()<<" workers\n";
+					cout << "Jobs per new worker is: "<<jobs_per_new_worker<<endl;
+					list<int>::iterator n;
+					
+					//uniformly submitting jobs to the newWorkers
+					for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
+					{
+						cout<<getCurrentTime()<<" Webmode new worker created\n";
+						cout<<getCurrentTime()<<" queuedJobs.size() 6:"<<queuedJobs.size()<<endl;
+						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);
+						
+						//adding it in map. Will be removed when jobs are scheduled
+						spilledJobsMap[ (*n) ] = jobsForThisWorker;
+						
+					}
 				}
 				
 			}
@@ -701,7 +706,9 @@ void Scheduler::tryToSendSpilledJobs()
 			int num_jobs = jobs.size();
 			int wid = (*it).first;
 			Worker *worker = getWorkerObject(wid);
-			int wid_copy = worker->getWorkerID();
+			int wid_copy = wid; //worker->getWorkerID();
+			
+			cout<< "Worker ID: "<<wid <<endl;
 			
 			/*sending jobs to this worker*/
 			bool successful = worker->submitJobs(jobs);
@@ -981,50 +988,50 @@ void Scheduler::calculateFastestJobTime(long jobduration)
 void Scheduler::calculateSlowestJobTime(long jobduration)
 {
     if(jobduration > slowest_job_time)
-      slowest_job_time = jobduration;
-  }
-  
-  long Scheduler::getAverageJobDuration()
-  {
+		slowest_job_time = jobduration;
+}
+
+long Scheduler::getAverageJobDuration()
+{
     return ceil(avg_job_duration);
-  }
+}
 long Scheduler::getFastestJobTime()
-  {
+{
     //returns 1000000 if no job has completed yet
     return fastest_job_time;
-  }
+}
 long Scheduler::getSlowestJobTime()
-  {
+{
     //returns -1 if no job has completed yet
     return slowest_job_time;
-  }
+}
 
 
 
-  //! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
+//! Outputs the current state of a Scheduler object (can be static also; will be decided later on)
 void Scheduler::print()
 {
-  
-  
-log->status(scheduler_mode, scheduling_interval, 
-              (int)queuedJobs.size(),
-              (int)runningJobs.size(),
-              (int)completedJobs.size());
-
-  /*  if(workerStats.front() != NULL)
-    workerStats.front()->print();
-  if(workerStats.back() != NULL)
-    workerStats.back()->print();
-  */
-  
+	
+	
+	log->status(scheduler_mode, scheduling_interval, 
+				(int)queuedJobs.size(),
+				(int)runningJobs.size(),
+				(int)completedJobs.size());
+	
+	/*  if(workerStats.front() != NULL)
+	 workerStats.front()->print();
+	 if(workerStats.back() != NULL)
+	 workerStats.back()->print();
+	 */
+	
 }
 
 void Scheduler::printSummary()
 {
-  stringstream s;
-  s<<" [SUMMARY] (time:"<<getCurrentTime()<<")"
-   <<"\tTotal Jobs Completed: "<<completedJobs.size()
-   <<""
-   <<endl;
-  log->decision(s.str());
+	stringstream s;
+	s<<" [SUMMARY] (time:"<<getCurrentTime()<<")"
+	<<"\tTotal Jobs Completed: "<<completedJobs.size()
+	<<""
+	<<endl;
+	log->decision(s.str());
 }
