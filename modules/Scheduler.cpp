@@ -610,11 +610,15 @@ void Scheduler::runWebModeScheduler()
 					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
 					
 					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
-					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? jobs_per_new_worker : workers_to_be_started;
+					//TODO: Problem: The value 1 is a hack to get this working. Must be improved!
+					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
 					
 					stringstream s;
 					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
 					log->decision(s.str());
+					
+					//TODO: problem: Handle case where, if the no. of workers to be started is more than the no. of workers in the config file.
+					//causes SEG FAULT, if not handled!
 					
 					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
 					cout<<getCurrentTime()<<" Webmode Started "<<newWorkerIDs.size()<<" workers\n";
@@ -629,6 +633,7 @@ void Scheduler::runWebModeScheduler()
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);
 						
 						//adding it in map. Will be removed when jobs are scheduled
+						cout<<getCurrentTime()<<" Webmode Added list of spilled jobs to worker ID: "<< (*n) <<endl;
 						spilledJobsMap[ (*n) ] = jobsForThisWorker;
 						
 					}
