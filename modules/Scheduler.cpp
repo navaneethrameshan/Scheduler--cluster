@@ -598,7 +598,7 @@ void Scheduler::runWebModeScheduler()
 					time_for_spilled_jobs<<
 					endl;
 					
-					int workers_to_be_started = ceil(((double)time_for_spilled_jobs/CHARGINGTIME ));
+					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
 					cout<<"Webmode workers_to_be_started "<<
 					workers_to_be_started<<
 					endl;
