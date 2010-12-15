@@ -8,7 +8,7 @@
 #include "WorkerStatistics.h"
 using namespace std;
 
-#define CHARGINGTIME 60*60*1000
+#define CHARGINGTIME 60*1000
 
 int milliseconds; 
 list<Worker *>::iterator j;
@@ -407,22 +407,27 @@ void Scheduler::runWebModeScheduler()
 			}
 			int num_of_workers = wcount;
 			
+			int qsize = queuedJobs.size();
+			
 			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
 			for(ww=workers.begin();ww!=workers.end();ww++)
 			{
-				int qsize = queuedJobs.size();
+				
 				if((*ww)->isAcceptingJobs() /*|| (*ww)->getState() != OFFLINE*/ )
 				{
 					int wid = (*ww)->getWorkerID();
 					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
-					long jobs_per_worker = ((qsize/num_of_workers) == 0 ? qsize :qsize/num_of_workers);
+					long jobs_per_worker = ((qsize/num_of_workers) == 0 ? qsize : (qsize/num_of_workers));
 					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
 					
 					//cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
+					cout<<"Webmode worst_time_for_jobs: "<<worst_time_required_for_jobs_in_q<<endl;
+					cout<<"Webmode time_until_next_tick: "<<time_until_next_charging_tick<<endl;
+					
 					/*checking if we need new nodes or not*/
 					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick)
 					{
-						
+						cout<<"Webmode should spill"<<endl;
 						//now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
 						//int jobs_to_be_sent = (time_until_next_charging_tick/worst_time_required_for_jobs_in_q);
 						
@@ -516,6 +521,7 @@ void Scheduler::runWebModeScheduler()
 			
 			if(spilled_over_jobs > 0) //TODO: need to fine tune this value 
 			{
+				cout << "Spilled over jobs: "<<spilled_over_jobs<<" Queued Jobs size: "<<queuedJobs.size()<<endl ;
 				list<Worker *>::iterator work;
 				list<Worker*> existingWorkers;
 				int count=0;
@@ -533,6 +539,7 @@ void Scheduler::runWebModeScheduler()
 					
 					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
 						Worker *wrkr = existingWorkers.front();
+						cout<<getCurrentTime()<<" queuedJobs.size() 4:"<<queuedJobs.size()<<endl;
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
 						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
 						cout<<"Webmode if spill sjobs size before splicing: "<<sjobs.size()<<endl;
@@ -547,6 +554,7 @@ void Scheduler::runWebModeScheduler()
 					list<Worker *>::iterator nw;
 					for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
 					{
+						cout<<getCurrentTime()<<" queuedJobs.size() 5:"<<queuedJobs.size()<<endl;
 						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
 						list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
 						cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
@@ -589,19 +597,19 @@ void Scheduler::runWebModeScheduler()
 				workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? jobs_per_new_worker : workers_to_be_started;
 					
 				stringstream s;
-				s<<"Scheduler will now startup new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
-				
+				s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
 				log->decision(s.str());
 				
 				list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
 				cout<<getCurrentTime()<<" Webmode Started "<<newWorkerIDs.size()<<" workers\n";
-				
+				cout << "Jobs per new worker is: "<<jobs_per_new_worker<<endl;
 				list<int>::iterator n;
 				
 				//uniformly submitting jobs to the newWorkers
 				for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
 				{
 					cout<<getCurrentTime()<<" Webmode new worker created\n";
+					cout<<getCurrentTime()<<" queuedJobs.size() 6:"<<queuedJobs.size()<<endl;
 					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);
 					
 					//adding it in map. Will be removed when jobs are scheduled
