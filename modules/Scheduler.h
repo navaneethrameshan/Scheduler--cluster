@@ -139,6 +139,12 @@ public:
 	long getSlowestJobTime();
 	
 	
+	/*
+	 WEB MODE SCHEUDLING IMPROVED
+	 */
+	map<int,int> calcJobsToScheduleBasedOnLoad(int num_jobs_to_be_scheduled);
+	map<int,double> calcLoadBasedOnNumWorkers();
+	
 	// outputs the current state of a Scheduler object (can be static also; will be decided later on)
 	void print();
 };

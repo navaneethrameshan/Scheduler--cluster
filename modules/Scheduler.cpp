@@ -274,7 +274,6 @@ void Scheduler::runSingleTaskScheduler()
 					jobs_to_submit.push_back(*i);	
 					
 					
-					
 					if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
 					{
 						// set start time of job
@@ -650,13 +649,88 @@ void Scheduler::runWebModeScheduler()
     }
 }
 
-void Scheduler::runWebModeSchedulerImproved() 
+map<int,double> Scheduler::calcLoadBasedOnNumWorkers()
 {
+	//fetch number of jobs on each worker node
+	list<Worker* >::iterator i;
+	map<int,double> workerLoad;
+	int total_jobs = 0;
+
+	
+	for(i = workers.begin(); i != workers.end(); i++)
+    {
+		if((*i)->isAcceptingJobs()) 
+		{
+		int wid = (*i)->getWorkerID();
+		WorkerStatistics *ws = getWorkerStatsForWorker(wid);
+		int num_sjobs = ws->getNumberOfSubmittedJobs();
+		//Hack: if num of jobs in a worker is 0, make it 1.
+		if (num_sjobs == 0) {
+			num_sjobs =1;
+		}
+		total_jobs += num_sjobs;
+		
+		workerLoad[wid] = num_sjobs;
+		
+			stringstream s;
+		s<<"[IMP]\t(time:"<<getCurrentTime()<<")"
+		<<"\twid:"<<wid
+		<<"\tsubmittedjobs:"<<ws->getNumberOfSubmittedJobs()
+		<<endl;
+			cout<<s.str()<<endl;
+		}
+			}
+		
+			map<int,double>::iterator it;
+			for(it=workerLoad.begin(); it!= workerLoad.end(); it++)
+			{
+				workerLoad[(*it).first] = (*it).second/total_jobs;
+			}
+			
+			return workerLoad;
+}
+			
+map<int, int> Scheduler::calcJobsToScheduleBasedOnLoad(int num_jobs_to_be_scheduled)
+{
+	map<int,double> performanceMap = calcLoadBasedOnNumWorkers();
+	map<int,int> jobsToSchedulePerWorker;
+	double totalPerformance=0;
+	
+	
+	map<int,double>::iterator it;
+	for(it=performanceMap.begin(); it!= performanceMap.end(); it++)
+	{
+		cout<<"IMP worker: "<<(*it).first<<" load "<<(*it).second<<endl;
+		performanceMap[(*it).first] = 1/((*it).second);
+		cout<<"IMP worker: "<<(*it).first<<" performance "<<(*it).second<<endl;
+		totalPerformance += performanceMap[(*it).first];		
+	}
+		cout<<"IMP: Total Performance "<<totalPerformance<<endl;
+	for(it=performanceMap.begin(); it!= performanceMap.end(); it++)
+	{
+		jobsToSchedulePerWorker[(*it).first] =  (int) (( num_jobs_to_be_scheduled*performanceMap[(*it).first] ) /totalPerformance);
+	}
+	
+	
+	return jobsToSchedulePerWorker;
+	
+}
+
+void Scheduler::runWebModeSchedulerImproved(){
+	
 	
 	//TODO: time calculation should also include the number of jobs running on the worker node
 	
 	//TODO: declare all funcs used here in Scheduler.h
 	
+	//gathering statistics for all workers so that we have a fresh view of all workers
+	    gatherStatisticsFromAllWorkers();
+	print();
+	
+	
+	//cout<<"["<<getCurrentTime()<<"][AVGRESPTIME] "<<getAverageJobDuration()/1000<<endl;
+	
+	//sending Spilled Jobs (if any)
 	
 	tryToSendSpilledJobs();
 	
@@ -676,24 +750,25 @@ void Scheduler::runWebModeSchedulerImproved()
 		{
 			//running the round robin scheduler if no job has completed yet
 			runRoundRobinScheduler();
-			cout<<getCurrentTime()<<" Webmode round roubin scheduler executed\n";
+			cout<<getCurrentTime()<<" Webmode round robin scheduler executed\n";
 	 	}
 		else if( (int)queuedJobs.size() > 0 ) 
 		{
 			list<Worker *>::iterator ww;
 			int spilled_over_jobs=0;
-			int wcount=0;
+			/*int wcount=0;
 			
 			for(ww=workers.begin();ww!=workers.end();ww++)
 			{
-				if((*ww)->isAcceptingJobs() /*|| (*ww)->getState() != OFFLINE*/ )
+				if((*ww)->isAcceptingJobs()  )
 				{
 					wcount++;
 				}
 			}
-			int num_of_workers = wcount;
+			int num_of_workers = wcount;*/
 			int qsize = queuedJobs.size();
-			long jobs_per_worker = ((qsize/num_of_workers) == 0 ?  1 : (qsize/num_of_workers));
+			int jobs_per_worker;
+			map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
 			
 			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
 			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
@@ -708,6 +783,7 @@ void Scheduler::runWebModeSchedulerImproved()
 					cout<<" Count remaining: "<< count_for_jobs <<endl;
 					int wid = (*ww)->getWorkerID();
 					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
+					jobs_per_worker = jobsPerWorkerMap[wid];
 					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
 					
 					//cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
@@ -802,6 +878,12 @@ void Scheduler::runWebModeSchedulerImproved()
 					}
 				}
 				
+				
+				/*************
+				 Spilled Over Jobs 
+				 **************/	
+			
+				
 				count_for_jobs -- ;
 			}
 			
@@ -834,7 +916,9 @@ void Scheduler::runWebModeSchedulerImproved()
 						list<Job>::iterator it;
 						it = sjobs.begin();
 						sjobs.splice(it, jobsForThisWorker);
-						cout<<"Webmode if spill sjobs size before splicing: "<<sjobs.size()<<endl;
+						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
+						cout<<"Webmode spill sjobs size after splicing: "<<sjobs.size()<<endl;
+						cout<<"Webmode map after splicing: "<<spilledJobsMap[wrkr->getWorkerID()].size()<<endl;
 						
 					}
 					
@@ -849,8 +933,9 @@ void Scheduler::runWebModeSchedulerImproved()
 							list<Job>::iterator it;
 							it = sjobs.begin();
 							sjobs.splice(it, jobsForThisWorker);
-							cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
-							
+							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
+							cout<<"Webmode spill sjobs size after splicing: "<<sjobs.size()<<endl;
+							cout<<"Webmode map after splicing: "<<spilledJobsMap[(*nw)->getWorkerID()].size()<<endl;
 						}
 					}
 					
@@ -916,6 +1001,7 @@ void Scheduler::runWebModeSchedulerImproved()
 			
 		}
     }
+	
 }
 
 //returns the time remaaining in the next charging tick for a worker
@@ -1217,6 +1303,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 	list<Worker* >::iterator i;
 	for(i = workers.begin(); i != workers.end(); i++)
     {
+		if((*i)->isAcceptingJobs()) {
 		int wid = (*i)->getWorkerID();
 		int qjobs = (*i)->getQueuedJobs();
 		double avgresptime = (*i)->getAverageResponseTime();
@@ -1237,6 +1324,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 		<<"\tavailmem:"<<ws->getAvailableMemory()
 		<<"\tsubmittedjobs:"<<ws->getNumberOfSubmittedJobs()
 		<<endl;
+		}
     }
 	
 	//    if(getCurrentTime()%100 == 0)
