@@ -8,7 +8,7 @@
 #include "WorkerStatistics.h"
 using namespace std;
 
-#define CHARGINGTIME 60*60*1000
+#define CHARGINGTIME 20*60*1000
 
 int milliseconds; 
 list<Worker *>::iterator j;
@@ -563,7 +563,9 @@ void Scheduler::runWebModeScheduler()
 						list<Job>::iterator it;
 						it = sjobs.begin();
 						sjobs.splice(it, jobsForThisWorker);
-						cout<<"Webmode if spill sjobs size before splicing: "<<sjobs.size()<<endl;
+						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
+						cout<<"Webmode spill sjobs size after splicing: "<<sjobs.size()<<endl;
+						cout<<"Webmode map after splicing: "<<spilledJobsMap[wrkr->getWorkerID()].size()<<endl;
 						
 					}
 					
@@ -578,8 +580,9 @@ void Scheduler::runWebModeScheduler()
 							list<Job>::iterator it;
 							it = sjobs.begin();
 							sjobs.splice(it, jobsForThisWorker);
-							cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
-							
+							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
+							cout<<"Webmode spill sjobs size after splicing: "<<sjobs.size()<<endl;
+							cout<<"Webmode map after splicing: "<<spilledJobsMap[(*nw)->getWorkerID()].size()<<endl;
 						}
 					}
 					
