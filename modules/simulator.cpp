@@ -101,6 +101,7 @@ void Simulator::execute() {
 
   scheduler->print();   
   scheduler->printSummary();
+  scheduler->gatherStatisticsFromAllWorkers();
   cleanUp();
 }
 

@@ -144,6 +144,8 @@ public:
 	 */
 	map<int,int> calcJobsToScheduleBasedOnLoad(int num_jobs_to_be_scheduled);
 	map<int,double> calcLoadBasedOnNumWorkers();
+	void sendQueuedJobsToIdleWorkers();
+	int getNumberOfIdleWorkers();
 	
 	// outputs the current state of a Scheduler object (can be static also; will be decided later on)
 	void print();

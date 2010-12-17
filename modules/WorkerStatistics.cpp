@@ -67,6 +67,11 @@ using namespace std;
     return number_of_submitted_jobs;
   }
 
+int WorkerStatistics::getNumberOfTotalSubmittedJobs()
+{
+  return number_of_total_submitted_jobs;
+}
+
   double WorkerStatistics::getWorkerDurationTillNow()
   {
     return worker_duration_till_now;
@@ -116,6 +121,9 @@ void WorkerStatistics::setNumberOfSubmittedJobs(int numsubmittedjobs, long curre
     number_of_submitted_jobs = numsubmittedjobs;
     last_updated = currenttime;
   }
+
+
+
   void WorkerStatistics::setWorkerDurationTillNow(double workerduration, long currenttime)
   {
     worker_duration_till_now = workerduration;
@@ -145,6 +153,12 @@ void WorkerStatistics::setNumberOfSubmittedJobs(int numsubmittedjobs, long curre
     number_of_submitted_jobs++;
     last_updated = currenttime;
   }
+
+void WorkerStatistics::incrementTotalSubmittedJobs(long currenttime)
+{
+  number_of_total_submitted_jobs++;
+  last_updated = currenttime;
+}
 
   void WorkerStatistics::incrementQueuedJobs(long currenttime)
   {

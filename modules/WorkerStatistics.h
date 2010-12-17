@@ -29,6 +29,7 @@ class WorkerStatistics {
   int number_of_running_jobs;
   int number_of_queued_jobs;
   int number_of_submitted_jobs;
+  int number_of_total_submitted_jobs;
   double worker_duration_till_now;
   double worker_cost_till_now;
   long created_time;
@@ -47,6 +48,7 @@ class WorkerStatistics {
   int getNumberOfRunningJobs();
   int getNumberOfQueuedJobs();
   int getNumberOfSubmittedJobs();
+  int getNumberOfTotalSubmittedJobs();
   double getWorkerDurationTillNow();
   double getWorkerCostTillNow();
   long getCreatedTime();
@@ -56,6 +58,7 @@ class WorkerStatistics {
   void incrementSubmittedJobs(long currenttime);
   void incrementQueuedJobs(long currenttime);  
   void incrementRunningJobs(long currenttime);
+  void incrementTotalSubmittedJobs(long currenttime);
   
   //decrement functions
   void decrementSubmittedJobs(long currenttime);
@@ -70,6 +73,7 @@ class WorkerStatistics {
   void setNumberOfRunningJobs(int numrunningjobs, long currenttime);
   void setNumberOfQueuedJobs(int numqueuedjobs, long currenttime);
   void setNumberOfSubmittedJobs(int numsubmittedjobs, long currenttime);
+  void setNumberOfTotalSubmittedJobs(int numtotalsubmittedjobs, long currenttime);
   void setWorkerDurationTillNow(double workerduration, long currenttime);
   void setWorkerCostTillNow(double workercost, long currenttime);
   void setCreatedTime(long createdtime); //not required - should be deprecated
