@@ -200,7 +200,7 @@ void Scheduler::runRoundRobinScheduler()
 
 void Scheduler:: roundRobinWeb()
 {
-	
+	print();
 	
     if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
 	{
@@ -236,9 +236,9 @@ void Scheduler:: roundRobinWeb()
 					{
 						int wid = (*j)->getWorkerID();
 						markJobsAsStarted(jobs_to_submit, wid);
-						stringstream s;
-						s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
-						log->decision(s.str());
+						//stringstream s;
+						//s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
+						//log->decision(s.str());
 						
 						queuedJobs.erase(i); //erasing the Job from the queuedJobs
 						i--; 
@@ -377,9 +377,9 @@ void Scheduler::runSingleTaskScheduler()
 						/**/
 						runningJobs.push_back(*i); //adding the job to runningJobs
 						
-						stringstream s;
-						s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
-						log->decision(s.str());
+						//stringstream s;
+						//s << "Job ID " << (*i).getJobID() << " submitted to Worker " << (*j)->getWorkerID() << "at time: "<<milliseconds;
+						//log->decision(s.str());
 						
 						queuedJobs.erase(i); //erasing the Job from the queuedJobs
 						i--; 
@@ -892,17 +892,8 @@ void Scheduler::runWebModeSchedulerImproved(){
 
 	  list<Worker *>::iterator ww;
 	  int spilled_over_jobs=0;
-	  /*int wcount=0;
-	    
-	    for(ww=workers.begin();ww!=workers.end();ww++)
-	    {
-	    if((*ww)->isAcceptingJobs()  )
-	    {
-	    wcount++;
-	    }
-	    }
-	    int num_of_workers = wcount;*/
-	  int qsize = queuedJobs.size();
+	
+		int qsize = queuedJobs.size();
 	  int jobs_per_worker;
 	  map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
 			
@@ -1560,11 +1551,7 @@ void Scheduler::print()
 				(int)runningJobs.size(),
 				(int)completedJobs.size());
 	
-	/*  if(workerStats.front() != NULL)
-	 workerStats.front()->print();
-	 if(workerStats.back() != NULL)
-	 workerStats.back()->print();
-	 */
+	
 	
 }
 
