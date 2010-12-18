@@ -1,8 +1,3 @@
-//!@version 0.1
-//!@author Was/Nav/Marc
-//!@date November 9th, 2010
-//!@note WorkerStatistics implementation file
-
 /*! \brief A class to store Worker Statistics which are used by the Scheduler to make intelligent decisions
  */
 
@@ -210,7 +205,6 @@ void WorkerStatistics::print()
       "last_updated:"<<last_updated<<"\t"<<
         endl ;
     
-    //  cout<<"Ola"<<endl;
   }
 //};
 

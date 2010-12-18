@@ -1,8 +1,3 @@
-//!@version 0.1
-//!@author Was/Nav/Marc
-//!@date November 9th, 2010
-//!@note WorkerStatistics header file
-
 /*! \brief A class to store Worker Statistics which are used by the Scheduler to makescheduling decisions. The attributes of the objects of this class are periodically updated by the scheduler during the simulation.
  */
 
