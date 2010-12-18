@@ -183,6 +183,10 @@ float Worker::getTotalCost() {
   if ((m % 60) > 0) 
     h++;
 
+  if (state.current == OFFLINE) {
+    h = 0;
+  }
+
   return h*getCostPerHour();
 }
 
