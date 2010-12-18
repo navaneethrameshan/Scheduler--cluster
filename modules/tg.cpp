@@ -9,7 +9,7 @@ logger = Logger::getLogger();
 scheduler = sched;
 
 }
-list<Task > Taskgen::create_task(Task  *given_task, Job job[][100], int total_input){
+list<Task > Taskgen::create_task(Task  *given_task, Job job[][1000], int total_input){
   //srand(time(NULL));
   srand(1);
 	 fstream file("config/input.conf");
