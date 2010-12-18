@@ -2,6 +2,7 @@
 #include <map>
 #include <iostream>
 #include <fstream>
+#include <cmath>
 
 #include "simulator.h"
 
@@ -291,7 +292,8 @@ void Simulator::logTotals() {
   long totalExecutionTime = 0;
   long totalCPUTime = 0;
   float totalCost = 0;
-
+  list<double> response_times;
+  
   map<long,int>::iterator it;
   list<Worker *>::iterator worker;
   for (worker = workers.begin(); worker != workers.end(); ++worker) {
@@ -301,6 +303,7 @@ void Simulator::logTotals() {
 
     map<long,int> times = (*worker)->getCompletionTimes(0);
     for (it = times.begin(); it != times.end(); ++it) {
+      response_times.push_front((*it).second);
       avg_response_time += (*it).second;
     } 
 
@@ -309,12 +312,23 @@ void Simulator::logTotals() {
   }
     
   avg_response_time = avg_response_time / job_count;
-  
+
+  // std deviation
+
+  double deviation = 0;
+  list<double>::iterator average;
+  for (average = response_times.begin(); average != response_times.end(); ++average) {
+    deviation += pow((*average)-avg_response_time, 2);
+  }
+
+  deviation = sqrt(deviation/job_count);
+
   logger->totals(job_count,
                  totalExecutionTime/1000, // ms to s
                  totalCPUTime/1000, // ms to s
                  totalCost, 
-                 avg_response_time/1000);
+                 avg_response_time/1000, 
+                 deviation/1000);
   
 
 }

@@ -76,16 +76,19 @@ void Logger::workerAverage(double avg_response_time, float cost,
   write(entry.str());
 }
 
-void Logger::totals(int job_count, long exec, long cpu, float cost, double avgtime) {
+void Logger::totals(int job_count, long exec, long cpu, float cost, 
+                    double avgtime, double deviation) {
+  double waste = (((double)cpu-(double)exec)/(double)exec)*100;
   stringstream entry;
   entry << "---------------- [SIMULATOR] ----------------- \n" 
         << "Number of jobs:\t\t" << job_count << "\n"
         << "Total:\t\t\t" << cpu << "s\n"
         << "Active:\t\t\t" << exec << "s\n"
         << "Unused:\t\t\t" << cpu-exec << "s\n"
+        << "Waste: \t\t\t" << waste << "\%\n"
         << "Cost: \t\t\t" << cost << " Euro\n"
         << "Job avg response time: \t" << avgtime << "s\n"
-        << "Standard deviation: \tXXs\n" 
+        << "Standard deviation: \t"<< deviation <<"s\n" 
         << "----------------------------------------------";
 #ifndef DEBUG
   cout << entry.str() << endl;
