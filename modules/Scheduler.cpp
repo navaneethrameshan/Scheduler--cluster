@@ -335,7 +335,7 @@ void Scheduler::runSingleTaskScheduler()
 			{
 			  markJobsAsStarted(jobsForThisWorker, wid);
 			  stringstream s;
-			  s<<getCurrentTime()<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+			  s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
 			    " jobs to worker "<<wid<<endl;
 			  log->decision(s.str());
 			}
@@ -600,7 +600,7 @@ void Scheduler::runWebModeScheduler()
 						{
 							markJobsAsStarted(jobsForThisWorker, wid);
 							stringstream s;
-							s<<getCurrentTime()<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
 							" jobs to worker "<<wid<<endl;
 							log->decision(s.str());
 
@@ -920,7 +920,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 			{
 			  markJobsAsStarted(jobsForThisWorker, wid);
 			  stringstream s;
-			  s<<getCurrentTime()<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+			  s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
 			    " jobs to worker "<<wid<<endl;
 			  log->decision(s.str());
 			  //jobsForThisWorker.clear();
@@ -1144,14 +1144,14 @@ void Scheduler::tryToSendSpilledJobs()
 				spilledJobsMap.erase(wid);
 
 				stringstream s;
-				s<<getCurrentTime()<<"Scheduler has submitted "<<num_jobs<<" jobs to the  worker "<<wid_copy<<" that just started accepting jobs"<<endl;
+				s<<"Scheduler has submitted "<<num_jobs<<" jobs to the  worker "<<wid_copy<<" that just started accepting jobs"<<endl;
 				log->decision(s.str());
 				break;
 			}
 			else
 			{
 			  stringstream s;
-			  s<<getCurrentTime()<<"Scheduler was unable to submit "<<jobs.size()<<" jobs to worker "<<wid<<" because it is still booting up. Will try again in next scheduling cycle."<<endl;
+			  s<<"Scheduler was unable to submit "<<jobs.size()<<" jobs to worker "<<wid<<" because it is still booting up. Will try again in next scheduling cycle."<<endl;
 			  log->decision(s.str());		   
 			}
 			/*sending jobs code ends here*/

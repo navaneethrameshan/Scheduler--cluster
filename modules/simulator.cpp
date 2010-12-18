@@ -84,7 +84,6 @@ void Simulator::execute() {
 
     runWorkers();            
     scheduler->runScheduler();
-    //    scheduler->print();   //just added for debugging - can be removed
     
     // store values for moving average
     if ((currentTime % 1000) == 0) {
@@ -105,7 +104,6 @@ void Simulator::execute() {
   }
 
   scheduler->print();   
-  scheduler->printSummary();
   scheduler->gatherStatisticsFromAllWorkers();
   cleanUp();
 }
