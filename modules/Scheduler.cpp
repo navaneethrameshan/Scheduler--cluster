@@ -38,6 +38,837 @@ Scheduler::Scheduler(string scheduler_mode, float scheduling_interval,
 	queuedJobs.clear ();
 }
 
+//! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
+int Scheduler::runScheduler()
+{ 
+	
+	//doing initializations and stuff
+	doInitAndOtherStuff();
+	
+	//checking if its time to do some scheduling!
+	if(isScheduleTime()) {
+		
+		gatherStatisticsFromAllWorkers();
+		print();
+		
+		if(scheduler_mode == "S")
+		{
+			runSingleTaskScheduler();
+		}
+		
+		else if(scheduler_mode == "W")
+		{
+			runWebModeSchedulerImproved();
+		}
+		
+		else if(scheduler_mode == "R")
+		{
+			runRoundRobinScheduler();
+		}		
+		
+	}
+	
+	return 0; //returning successful exit everytime (for the time being)
+}
+
+void Scheduler::runRoundRobinScheduler()
+{
+	
+	
+    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+	{
+		log->decision("Nothing to do, so chilling!");
+		return;
+	}
+    else 
+	{
+		if( (int)queuedJobs.size() > 0) 
+		{
+			list<Worker*> activeWorkers = getListOfActiveWorkers();
+			int num_of_workers = activeWorkers.size();
+			if (num_of_workers ==0) {
+				return;
+			}
+			int qsize = queuedJobs.size();
+			int jobs_per_worker = ((qsize/num_of_workers) == 0 ? 1 : (qsize/num_of_workers));
+			
+			int count_for_jobs = queuedJobs.size(); 
+			
+			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
+			list<Worker*>::iterator ww;
+			for(ww=activeWorkers.begin();ww!=activeWorkers.end();ww++)
+			{
+				if( count_for_jobs>0 )
+				{
+					
+					int wid = (*ww)->getWorkerID();
+					
+					
+					//fetching job objects from queue
+					
+					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
+					
+					/*sending jobs to this worker*/
+					bool successful = (*ww)->submitJobs(jobsForThisWorker);
+					if(successful)
+					{
+						markJobsAsStarted(jobsForThisWorker, wid);
+						stringstream s;
+						s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+						" jobs to worker "<<wid<<endl;
+						log->decision(s.str());
+					}
+					else
+					{//this would never happen - but handling this case just to be consistent
+					    
+						stringstream s;
+						s<<"Unable to submit "<<jobsForThisWorker.size()<<
+					    " jobs to worker "<<wid<<endl;
+						log->decision(s.str());		   
+						cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+						exit(1);
+					}
+					/*sending jobs code ends here*/
+					
+				}
+				
+				
+				count_for_jobs--;
+			}
+			
+		}
+	}
+}
+
+void Scheduler::roundRobinWeb()
+{
+	
+    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+	{
+		log->decision("Nothing to do, so chilling!");
+		return;
+	}
+    else 
+	{
+		if( (int)queuedJobs.size() > 0) 
+		{
+			list<Job >::iterator i;
+	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
+			{
+				
+				if( 
+				   (*j)->isAcceptingJobs())
+				{
+					//DEBUG - remove
+					list<Job> jobs_to_submit;
+					jobs_to_submit.push_back(*i);	
+					
+					
+					
+					if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
+					{
+						int wid = (*j)->getWorkerID();
+						markJobsAsStarted(jobs_to_submit, wid);
+						
+						queuedJobs.erase(i); //erasing the Job from the queuedJobs
+						i--; 
+						
+						
+					}
+					
+				}
+				
+				j++; //workers list iterator
+				if(j == workers.end()) 
+				{
+					j = workers.begin();
+				}
+				
+				
+			}
+			
+		}
+	}
+	
+	
+}
+
+
+void Scheduler::runSingleTaskScheduler()
+{
+	
+	
+	
+	//sending Spilled Jobs (if any)
+	tryToSendSpilledJobs();
+	
+	
+	//switch off idle workers if required
+	switchOffIdleWorkers();
+	
+	if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+    {
+		log->decision("Schedeuler is relaxing because there is no work to do, literally.");
+		return;
+    }
+	
+	else 
+    {
+		if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
+		{
+			//running the round robin scheduler if no job has completed yet
+			roundRobinWeb();
+		}
+		
+		
+		else if ((int)(queuedJobs.size() > 0) &&  ((int)queuedJobs.size() <= getNumberOfIdleWorkers()) )
+		{
+			sendQueuedJobsToIdleWorkers();
+			
+		}
+		
+		else if( (int)queuedJobs.size() > 0 ) 
+		{
+			list<Worker *>::iterator ww;
+			int spilled_over_jobs=0;
+			
+			int qsize = queuedJobs.size();
+			int jobs_per_worker;
+			map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
+			
+			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
+			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
+			int count_for_jobs = queuedJobs.size(); 
+			
+			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
+			for(ww=workers.begin();ww!=workers.end();ww++)
+			{
+				int wid = (*ww)->getWorkerID();
+				
+				if((*ww)->isAcceptingJobs() && count_for_jobs>0 && jobsPerWorkerMap[wid] > 0) //new condition added Dec 17th
+				{
+					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
+					jobs_per_worker = jobsPerWorkerMap[wid];
+					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
+					
+					
+					
+					
+					/*checking if we need new nodes or not*/
+					
+					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick ) 
+					{
+						//now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
+						
+						int jobs_to_be_sent = ( (time_until_next_charging_tick/getSlowestJobTime()) <= 1 ) ? 1 : (time_until_next_charging_tick/getSlowestJobTime()); 
+						
+						
+						//fetching jobs from queue
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_to_be_sent);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());
+						}
+						else
+						{ //this would never happen - but doing it just to be consistent
+							stringstream s;
+							s<<"Unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		    
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							sleep(1);
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						
+						//spilled jobs for each worker are accumulated so that we can decide how many new nods to start for them 
+						spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
+					}
+					
+					
+					else //means that the jobs_per_worker are feasible for this worker
+					{
+						//fetching job objects from queue						
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_worker);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+							" jobs to existing worker "<<wid<<" because no new workers were required."<<endl;
+							log->decision(s.str());
+						}
+						else
+						{//this would never happen							
+							stringstream s;
+							s<<"Scheduler was unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		   
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						
+					}
+				}
+				
+				
+				count_for_jobs -- ;
+			}
+			
+			/*************
+			 Handling Spilled Over Jobs 
+			 **************/					      	
+			
+			
+			if(spilled_over_jobs > 0) 
+			{
+				list<Worker *>::iterator work;
+				list<Worker*> existingWorkers;
+				int count=0;
+				for(work=workers.begin();work!=workers.end();work++)
+				{
+					if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
+					{
+						existingWorkers.push_back((*work));
+						count++;
+					}
+				}
+				
+				if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
+					int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
+					
+					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
+						Worker *wrkr = existingWorkers.front();
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
+						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
+						
+						list<Job>::iterator it;
+						it = sjobs.begin();
+						sjobs.splice(it, jobsForThisWorker);
+						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
+						
+					}
+					
+					else {//splitting the jobs evenly to all workers which are still booting up
+						list<Worker *>::iterator nw;
+						for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
+						{
+							list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
+							list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
+							list<Job>::iterator it;
+							it = sjobs.begin();
+							sjobs.splice(it, jobsForThisWorker);
+							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
+						}
+					}
+					
+				}
+				
+				
+				else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
+					
+					//calculating the time(in milliseconds) required for spilled over jobs
+					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
+					
+					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(getChargingTimeConsideringPercentWaste()) ));
+					
+					
+					// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
+					// however the algorithm will work since the excess jobs will remain in queuedJobs
+					
+					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
+					
+					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
+					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
+					
+					stringstream s;
+					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs in the queue which the current workers cant finish before the next charging tick";
+					log->decision(s.str());
+					
+					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
+					list<int>::iterator n;
+					
+					//uniformly submitting jobs to the newWorkers
+					for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
+					{
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_new_worker);
+						
+						//adding it in map. Will be removed when jobs are scheduled
+						spilledJobsMap[ (*n) ] = jobsForThisWorker;
+						
+					}
+				}
+				
+			}
+			
+			
+		}
+    }
+	
+}
+
+void Scheduler::runWebModeScheduler() 
+{
+	
+	//gathering statistics for all workers so that we have a fresh view of all workers
+	gatherStatisticsFromAllWorkers();
+	print();
+	
+	//trying to send spilled jobs
+	tryToSendSpilledJobs();
+	
+	//switch off idle workers if required
+	switchOffIdleWorkers();
+	
+	if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+    {
+		log->decision("Schedeuler is relaxing because there is no work to do, literally.");
+		return;
+    }
+	else 
+	{
+	    if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
+		{
+			//running the round robin scheduler if no job has completed yet
+			roundRobinWeb();
+		}
+		else if( (int)queuedJobs.size() > 0 ) 
+		{
+			list<Worker *>::iterator ww;
+			int spilled_over_jobs=0;
+			int wcount=0;
+			
+			for(ww=workers.begin();ww!=workers.end();ww++)
+			{
+				if((*ww)->isAcceptingJobs() /*|| (*ww)->getState() != OFFLINE*/ )
+				{
+					wcount++;
+				}
+			}
+			int num_of_workers = wcount;
+			int qsize = queuedJobs.size();
+			long jobs_per_worker = ((qsize/num_of_workers) == 0 ?  1 : (qsize/num_of_workers));
+			
+			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
+			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
+			int count_for_jobs = queuedJobs.size(); 
+			
+			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
+			for(ww=workers.begin();ww!=workers.end();ww++)
+			{
+				
+				if((*ww)->isAcceptingJobs() && count_for_jobs>0 )
+				{
+					int wid = (*ww)->getWorkerID();
+					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
+					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
+					
+					
+					/*checking if we need new nodes or not*/
+					
+					
+					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick )
+					{
+						
+						int jobs_to_be_sent = (time_until_next_charging_tick/getSlowestJobTime());
+						
+						//fetching jobs from queue
+						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_to_be_sent);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());
+							
+						}
+						else
+						{//this would never happen - but just being consistent
+						    stringstream s;
+							s<<"Unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		    
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						
+						spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
+					}
+					
+					
+					else
+					{
+						//means that the jobs_per_worker are feasible for this worker
+						
+						//fetching job objects from queue						
+						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Submitted "<<jobsForThisWorker.size()<<" jobs to worker "<<wid<<" because these jobs will finish before the next charging tick."<<endl;
+							log->decision(s.str());
+						}
+						else
+						{//this would never happen - but just being consistent
+							
+							stringstream s;
+							s<<"Unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		   
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						
+					}
+				}
+				
+				
+				
+				count_for_jobs -- ;
+			}
+			
+			
+			
+			/*************
+			 Spilled Over Jobs 
+			 **************/	
+			
+			
+			if(spilled_over_jobs > 0) 
+			{
+				list<Worker *>::iterator work;
+				list<Worker*> existingWorkers;
+				int count=0;
+				for(work=workers.begin();work!=workers.end();work++)
+				{
+					if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
+					{
+						existingWorkers.push_back((*work));
+						count++;
+					}
+				}
+				
+				if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
+					int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
+					
+					
+					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
+						Worker *wrkr = existingWorkers.front();
+						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
+						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];						
+						list<Job>::iterator it;
+						it = sjobs.begin();
+						sjobs.splice(it, jobsForThisWorker);
+						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
+						
+					}
+					
+					else {//splitting the jobs evenly to all workers which are still booting up
+						list<Worker *>::iterator nw;
+						for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
+						{
+							
+							list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
+							list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
+							list<Job>::iterator it;
+							it = sjobs.begin();
+							sjobs.splice(it, jobsForThisWorker);
+							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
+						}
+					}
+					
+				}
+				
+				
+				else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
+					
+					
+					//calculating the time(in milliseconds) required for spilled over jobs
+					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
+					
+					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
+					
+					
+					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
+					
+					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
+					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
+					
+					stringstream s;
+					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs which cant be scheduled on existing workers";
+					log->decision(s.str());
+					
+					
+					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
+					list<int>::iterator n;
+					
+					//uniformly submitting jobs to the newWorkers
+					for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
+					{
+						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);						
+						//adding it in map. Will be removed when jobs are scheduled
+						spilledJobsMap[ (*n) ] = jobsForThisWorker;
+						
+					}
+				}
+				
+			}
+			
+			
+		}
+    }
+}
+
+void Scheduler::runWebModeSchedulerImproved(){
+	
+	
+	//gathering statistics for all workers so that we have a fresh view of all workers
+	//  gatherStatisticsFromAllWorkers();
+	// print();
+	
+	
+	// //sending Spilled Jobs (if any)
+	tryToSendSpilledJobs();
+	
+	
+	//switch off idle workers if required
+	switchOffIdleWorkers();
+	
+	if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+    {
+		log->decision("Schedeuler is relaxing because there is no work to do, literally.");
+		return;
+    }
+	
+	else 
+    {
+		if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
+		{
+			//running the round robin scheduler if no job has completed yet
+			stringstream s;
+			s<<"Scheduler will do round robin scheduling until there is at least one completed job"<<endl;
+			log->decision(s.str());
+			roundRobinWeb();
+		}
+		
+		
+		else if ((int)(queuedJobs.size() > 0) &&  ((int)queuedJobs.size() <= getNumberOfIdleWorkers()) )
+		{
+			sendQueuedJobsToIdleWorkers();
+			
+		}
+		
+		else if( (int)queuedJobs.size() > 0 ) 
+		{
+			
+			list<Worker *>::iterator ww;
+			int spilled_over_jobs=0;
+			
+			int qsize = queuedJobs.size();
+			int jobs_per_worker;
+			map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
+			
+			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
+			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
+			int count_for_jobs = queuedJobs.size(); 
+			
+			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
+			for(ww=workers.begin();ww!=workers.end();ww++)
+			{
+				int wid = (*ww)->getWorkerID();
+				
+				if((*ww)->isAcceptingJobs() && count_for_jobs>0 && jobsPerWorkerMap[wid] > 0) //new condition added Dec 17th
+				{
+					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
+					jobs_per_worker = jobsPerWorkerMap[wid];
+					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
+					
+					
+					/*checking if we need new nodes or not*/
+					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick ) 
+					{
+						//now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
+						int jobs_to_be_sent = ( (time_until_next_charging_tick/getSlowestJobTime()) <= 1 ) ? 1 : (time_until_next_charging_tick/getSlowestJobTime()); 
+						
+						//fetching jobs from queue
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_to_be_sent);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());
+							//jobsForThisWorker.clear();
+						}
+						else
+						{//this would never happen - just being consistent
+							stringstream s;
+							s<<"Unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		    
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							sleep(1);
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						//spilled jobs for each worker are accumulated so that we can decide how many new nods to start for them 
+						spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
+						
+					}
+					
+					
+					else //means that the jobs_per_worker are feasible for this worker
+					{
+						//fetching job objects from queue						
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_worker);
+						
+						/*sending jobs to this worker*/
+						bool successful = (*ww)->submitJobs(jobsForThisWorker);
+						if(successful)
+						{
+							markJobsAsStarted(jobsForThisWorker, wid);
+							stringstream s;
+							s<<"Submitted "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<" because these jobs will complete before the next charging tick"<<endl;
+							log->decision(s.str());
+						}
+						else
+						{//this would never happen - just being consistent
+							
+							stringstream s;
+							s<<"Unable to submit "<<jobsForThisWorker.size()<<
+							" jobs to worker "<<wid<<endl;
+							log->decision(s.str());		   
+							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+							exit(1);
+						}
+						/*sending jobs code ends here*/
+						
+					}
+				}
+				count_for_jobs -- ;
+			}
+			
+			
+			/*************
+			 Handling Spilled Over Jobs 
+			 **************/	
+			
+			
+			if(spilled_over_jobs > 0) 
+			{
+				list<Worker *>::iterator work;
+				list<Worker*> existingWorkers;
+				int count=0;
+				for(work=workers.begin();work!=workers.end();work++)
+				{
+					if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
+					{
+						existingWorkers.push_back((*work));
+						count++;
+					}
+				}
+				
+				if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
+					int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
+					
+					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
+						Worker *wrkr = existingWorkers.front();
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
+						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
+						
+						list<Job>::iterator it;
+						it = sjobs.begin();
+						sjobs.splice(it, jobsForThisWorker);
+						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
+						
+					}
+					
+					else {//splitting the jobs evenly to all workers which are still booting up
+						list<Worker *>::iterator nw;
+						for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
+						{
+							list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
+							list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
+							list<Job>::iterator it;
+							it = sjobs.begin();
+							sjobs.splice(it, jobsForThisWorker);
+							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
+							stringstream s;
+							s<<"Scheduler has now assigned "<<sjobs.size()<<" jobs to worker "<<(*nw)->getWorkerID()<<". Jobs will sent when it has booted up"<<endl;
+							log->decision(s.str());
+						}
+					}
+					
+				}
+				
+				
+				else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
+					
+					//calculating the time(in milliseconds) required for spilled over jobs
+					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
+					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
+					
+					
+					// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
+					// however the algorithm will work since the excess jobs will remain in queuedJobs
+					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
+					
+					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
+					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
+					
+					stringstream s;
+					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs which wont finish before the next charging tick. So starting new worker(s) here will improve Average response time.";
+					log->decision(s.str());
+					
+					
+					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
+					list<int>::iterator n;
+					
+					//uniformly submitting jobs to the newWorkers
+					for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
+					{
+						list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_new_worker);
+						
+						//adding it in map. Will be removed when jobs are scheduled
+						spilledJobsMap[ (*n) ] = jobsForThisWorker;
+						
+					}
+				}
+				
+			}
+			
+			
+		}
+    }
+	
+}
+
 //! This function will start a worker and return its worker_id
 unsigned int Scheduler::startWorkerNode()
 {
@@ -121,129 +952,6 @@ list<Worker*> Scheduler::getListOfActiveWorkers()
 }
 
 
-void Scheduler::runRoundRobinScheduler()
-{
-	
-	
-    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
-	{
-		log->decision("Nothing to do, so chilling!");
-		return;
-	}
-    else 
-	{
-		if( (int)queuedJobs.size() > 0) 
-		{
-			list<Worker*> activeWorkers = getListOfActiveWorkers();
-			int num_of_workers = activeWorkers.size();
-			if (num_of_workers ==0) {
-				return;
-			}
-			int qsize = queuedJobs.size();
-			int jobs_per_worker = ((qsize/num_of_workers) == 0 ? 1 : (qsize/num_of_workers));
-			
-			int count_for_jobs = queuedJobs.size(); 
-
-			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
-			list<Worker*>::iterator ww;
-			for(ww=activeWorkers.begin();ww!=activeWorkers.end();ww++)
-			{
-				if( count_for_jobs>0 )
-				{
-
-					int wid = (*ww)->getWorkerID();
-					
-					
-					//fetching job objects from queue
-
-					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
-					
-					/*sending jobs to this worker*/
-					bool successful = (*ww)->submitJobs(jobsForThisWorker);
-					if(successful)
-					{
-						markJobsAsStarted(jobsForThisWorker, wid);
-						stringstream s;
-						s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
-						" jobs to worker "<<wid<<endl;
-						log->decision(s.str());
-					}
-					else
-					  {//this would never happen - but handling this case just to be consistent
-					    
-					  stringstream s;
-					  s<<"Unable to submit "<<jobsForThisWorker.size()<<
-					    " jobs to worker "<<wid<<endl;
-					  log->decision(s.str());		   
-					  cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-					  exit(1);
-					  }
-					/*sending jobs code ends here*/
-					
-				}
-				
-	
-				count_for_jobs--;
-				}
-				
-			}
-	}
-}
-
-
-void Scheduler::roundRobinWeb()
-{
-	
-    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
-	{
-		log->decision("Nothing to do, so chilling!");
-		return;
-	}
-    else 
-	{
-		if( (int)queuedJobs.size() > 0) 
-		{
-			list<Job >::iterator i;
-	   	    for(i=queuedJobs.begin();i!=queuedJobs.end();i++)
-			{
-				
-				if( 
-				   (*j)->isAcceptingJobs())
-				{
-					//DEBUG - remove
-					list<Job> jobs_to_submit;
-					jobs_to_submit.push_back(*i);	
-					
-					
-					
-					if( (*j)->submitJobs(jobs_to_submit) == true ) //submitting Job to the worker node
-					{
-						int wid = (*j)->getWorkerID();
-						markJobsAsStarted(jobs_to_submit, wid);
-						
-						queuedJobs.erase(i); //erasing the Job from the queuedJobs
-						i--; 
-						
-						
-					}
-					
-				}
-				
-				j++; //workers list iterator
-				if(j == workers.end()) 
-				{
-					j = workers.begin();
-				}
-				
-				
-			}
-			
-		}
-	}
-	
-	
-}
-
 map<int, int> Scheduler::getJobAwayTime() {
 	map<int,int> totalJobAwayTime;
 	list<Job>::iterator iter;
@@ -257,229 +965,6 @@ map<int, int> Scheduler::getJobAwayTime() {
 }
 
 
-void Scheduler::runSingleTaskScheduler()
-{
-
-
-	
-  //sending Spilled Jobs (if any)
-  tryToSendSpilledJobs();
-	
-
-  //switch off idle workers if required
-  switchOffIdleWorkers();
-	
-  if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
-    {
-      log->decision("Schedeuler is relaxing because there is no work to do, literally.");
-      return;
-    }
-
-  else 
-    {
-      if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
-	{
-	  //running the round robin scheduler if no job has completed yet
-	   roundRobinWeb();
-	}
-
-      
-      else if ((int)(queuedJobs.size() > 0) &&  ((int)queuedJobs.size() <= getNumberOfIdleWorkers()) )
-	{
-	  sendQueuedJobsToIdleWorkers();
-	  
-	}
-      
-      else if( (int)queuedJobs.size() > 0 ) 
-	{
-	  list<Worker *>::iterator ww;
-	  int spilled_over_jobs=0;
-	  
-	  int qsize = queuedJobs.size();
-	  int jobs_per_worker;
-	  map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
-			
-	  //when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
-	  //jobs get accumulated, although they aren't removed from queue. Prevents this problem.
-	  int count_for_jobs = queuedJobs.size(); 
-			
-	  //iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
-	  for(ww=workers.begin();ww!=workers.end();ww++)
-	    {
-	      int wid = (*ww)->getWorkerID();
-			  
-	      if((*ww)->isAcceptingJobs() && count_for_jobs>0 && jobsPerWorkerMap[wid] > 0) //new condition added Dec 17th
-		{
-		  long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
-		  jobs_per_worker = jobsPerWorkerMap[wid];
-		  long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
-					
-
-	
-					
-		  /*checking if we need new nodes or not*/
-									     					
-		  if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick ) 
-		    {
-		      //now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
-						
-		      int jobs_to_be_sent = ( (time_until_next_charging_tick/getSlowestJobTime()) <= 1 ) ? 1 : (time_until_next_charging_tick/getSlowestJobTime()); 
-						
-
-		      //fetching jobs from queue
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_to_be_sent);
-						
-		      /*sending jobs to this worker*/
-		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
-		      if(successful)
-			{
-			  markJobsAsStarted(jobsForThisWorker, wid);
-			  stringstream s;
-			  s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());
-			}
-		      else
-			{ //this would never happen - but doing it just to be consistent
-			  stringstream s;
-			  s<<"Unable to submit "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());		    
-			  cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-			  sleep(1);
-			  exit(1);
-			}
-		      /*sending jobs code ends here*/
-
-		      //spilled jobs for each worker are accumulated so that we can decide how many new nods to start for them 
-		      spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
-		    }
-					
-					
-		  else //means that the jobs_per_worker are feasible for this worker
-		    {
-		      //fetching job objects from queue						
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_worker);
-						
-		      /*sending jobs to this worker*/
-		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
-		      if(successful)
-			{
-			  markJobsAsStarted(jobsForThisWorker, wid);
-			  stringstream s;
-			  s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
-			    " jobs to existing worker "<<wid<<" because no new workers were required."<<endl;
-			  log->decision(s.str());
-			}
-		      else
-			{//this would never happen							
-			  stringstream s;
-			  s<<"Scheduler was unable to submit "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());		   
-			  cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-			  exit(1);
-			}
-		      /*sending jobs code ends here*/
-						
-		    }
-		}
-				
-				
-	      count_for_jobs -- ;
-	    }
-
-	      /*************
-	      Handling Spilled Over Jobs 
-	      **************/					      	
-
-			
-	  if(spilled_over_jobs > 0) 
-	    {
-	      list<Worker *>::iterator work;
-	      list<Worker*> existingWorkers;
-	      int count=0;
-	      for(work=workers.begin();work!=workers.end();work++)
-		{
-		  if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
-		    {
-		      existingWorkers.push_back((*work));
-		      count++;
-		    }
-		}
-				
-	      if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
-		int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
-					
-		if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
-		  Worker *wrkr = existingWorkers.front();
-		  list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
-		  list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
-						
-		  list<Job>::iterator it;
-		  it = sjobs.begin();
-		  sjobs.splice(it, jobsForThisWorker);
-		  spilledJobsMap[wrkr->getWorkerID()] = sjobs;
-
-		}
-					
-		else {//splitting the jobs evenly to all workers which are still booting up
-		  list<Worker *>::iterator nw;
-		  for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
-		    {
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
-		      list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
-		      list<Job>::iterator it;
-		      it = sjobs.begin();
-		      sjobs.splice(it, jobsForThisWorker);
-		      spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
-		    }
-		}
-					
-	      }
-				
-				
-	      else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
-					
-		//calculating the time(in milliseconds) required for spilled over jobs
-		long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
-				
-		double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(getChargingTimeConsideringPercentWaste()) ));
-					
-
-		// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
-		// however the algorithm will work since the excess jobs will remain in queuedJobs
-					
-		int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
-					
-		//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
-		workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
-					
-		stringstream s;
-		s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs in the queue which the current workers cant finish before the next charging tick";
-		log->decision(s.str());
-					
-		list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
-		list<int>::iterator n;
-					
-		//uniformly submitting jobs to the newWorkers
-		for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
-		  {
-		    list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_new_worker);
-						
-		    //adding it in map. Will be removed when jobs are scheduled
-		    spilledJobsMap[ (*n) ] = jobsForThisWorker;
-						
-		  }
-	      }
-				
-	    }
-			
-			
-	}
-    }
-
-}
 
 
 
@@ -526,227 +1011,6 @@ Worker* Scheduler::getBestWorkerInTermsOfAvailableMemory() {
     }
 }
 
-void Scheduler::runWebModeScheduler() 
-{
-	
-	//gathering statistics for all workers so that we have a fresh view of all workers
-        gatherStatisticsFromAllWorkers();
-	print();
-	
-	//trying to send spilled jobs
-	tryToSendSpilledJobs();
-	
-	//switch off idle workers if required
-	switchOffIdleWorkers();
-	
-	if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
-    {
-		log->decision("Schedeuler is relaxing because there is no work to do, literally.");
-		return;
-    }
-	else 
-	  {
-	    if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
-	      {
-		//running the round robin scheduler if no job has completed yet
-		roundRobinWeb();
-	      }
-		else if( (int)queuedJobs.size() > 0 ) 
-		{
-			list<Worker *>::iterator ww;
-			int spilled_over_jobs=0;
-			int wcount=0;
-			
-			for(ww=workers.begin();ww!=workers.end();ww++)
-			{
-				if((*ww)->isAcceptingJobs() /*|| (*ww)->getState() != OFFLINE*/ )
-				{
-					wcount++;
-				}
-			}
-			int num_of_workers = wcount;
-			int qsize = queuedJobs.size();
-			long jobs_per_worker = ((qsize/num_of_workers) == 0 ?  1 : (qsize/num_of_workers));
-			
-			//when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
-			//jobs get accumulated, although they aren't removed from queue. Prevents this problem.
-			int count_for_jobs = queuedJobs.size(); 
-			
-			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
-			for(ww=workers.begin();ww!=workers.end();ww++)
-			{
-				
-				if((*ww)->isAcceptingJobs() && count_for_jobs>0 )
-				{
-					int wid = (*ww)->getWorkerID();
-					long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
-					long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
-					
-					
-					/*checking if we need new nodes or not*/
-										
-					
-					if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick )
-					{
-							
-						int jobs_to_be_sent = (time_until_next_charging_tick/getSlowestJobTime());
-						
-						//fetching jobs from queue
-						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_to_be_sent);
-						
-						/*sending jobs to this worker*/
-						bool successful = (*ww)->submitJobs(jobsForThisWorker);
-						if(successful)
-						{
-							markJobsAsStarted(jobsForThisWorker, wid);
-							stringstream s;
-							s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
-							" jobs to worker "<<wid<<endl;
-							log->decision(s.str());
-
-						}
-						else
-						  {//this would never happen - but just being consistent
-						    stringstream s;
-							s<<"Unable to submit "<<jobsForThisWorker.size()<<
-							" jobs to worker "<<wid<<endl;
-							log->decision(s.str());		    
-							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-							exit(1);
-						}
-						/*sending jobs code ends here*/
-						
-						spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
-					}
-					
-					
-					else
-					{
-						//means that the jobs_per_worker are feasible for this worker
-
-						//fetching job objects from queue						
-						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
-						
-						/*sending jobs to this worker*/
-						bool successful = (*ww)->submitJobs(jobsForThisWorker);
-						if(successful)
-						{
-							markJobsAsStarted(jobsForThisWorker, wid);
-							stringstream s;
-							s<<"Submitted "<<jobsForThisWorker.size()<<" jobs to worker "<<wid<<" because these jobs will finish before the next charging tick."<<endl;
-							log->decision(s.str());
-						}
-						else
-						{//this would never happen - but just being consistent
-							
-													stringstream s;
-							s<<"Unable to submit "<<jobsForThisWorker.size()<<
-							" jobs to worker "<<wid<<endl;
-							log->decision(s.str());		   
-							cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-							exit(1);
-						}
-						/*sending jobs code ends here*/
-						
-					}
-				}
-				
-				
-				
-				count_for_jobs -- ;
-			}
-
-
-			
-			/*************
-			 Spilled Over Jobs 
-			**************/	
-			
-			
-			if(spilled_over_jobs > 0) 
-			{
-				list<Worker *>::iterator work;
-				list<Worker*> existingWorkers;
-				int count=0;
-				for(work=workers.begin();work!=workers.end();work++)
-				{
-					if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
-					{
-						existingWorkers.push_back((*work));
-						count++;
-					}
-				}
-				
-				if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
-					int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
-					
-
-					if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
-						Worker *wrkr = existingWorkers.front();
-						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
-						list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];						
-						list<Job>::iterator it;
-						it = sjobs.begin();
-						sjobs.splice(it, jobsForThisWorker);
-						spilledJobsMap[wrkr->getWorkerID()] = sjobs;
-						
-					}
-					
-					else {//splitting the jobs evenly to all workers which are still booting up
-						list<Worker *>::iterator nw;
-						for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
-						{
-
-							list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
-							list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
-							list<Job>::iterator it;
-							it = sjobs.begin();
-							sjobs.splice(it, jobsForThisWorker);
-							spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
-						}
-					}
-					
-				}
-				
-				
-				else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
-					
-					
-					//calculating the time(in milliseconds) required for spilled over jobs
-					long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
-					
-					double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
-					
-					
-					int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
-					
-					//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
-					workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
-					
-					stringstream s;
-					s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs which cant be scheduled on existing workers";
-					log->decision(s.str());
-					
-					
-					list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
-					list<int>::iterator n;
-					
-					//uniformly submitting jobs to the newWorkers
-					for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
-					{
-						list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);						
-						//adding it in map. Will be removed when jobs are scheduled
-						spilledJobsMap[ (*n) ] = jobsForThisWorker;
-						
-					}
-				}
-				
-			}
-			
-			
-		}
-    }
-}
 
 map<int,double> Scheduler::calcLoadBasedOnNumWorkers()
 {
@@ -840,234 +1104,6 @@ int Scheduler::getNumberOfIdleWorkers()
   return idle_count;
 }
 
-void Scheduler::runWebModeSchedulerImproved(){
-	
-
-   //gathering statistics for all workers so that we have a fresh view of all workers
-  //  gatherStatisticsFromAllWorkers();
-  // print();
-
-	
-  // //sending Spilled Jobs (if any)
-  tryToSendSpilledJobs();
-	
-
-  //switch off idle workers if required
-  switchOffIdleWorkers();
-	
-  if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
-    {
-      log->decision("Schedeuler is relaxing because there is no work to do, literally.");
-      return;
-    }
-
-  else 
-    {
-      if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
-	{
-	  //running the round robin scheduler if no job has completed yet
-	  stringstream s;
-	  s<<"Scheduler will do round robin scheduling until there is at least one completed job"<<endl;
-	  log->decision(s.str());
-	  roundRobinWeb();
-	}
-
-      
-      else if ((int)(queuedJobs.size() > 0) &&  ((int)queuedJobs.size() <= getNumberOfIdleWorkers()) )
-	{
-	  sendQueuedJobsToIdleWorkers();
-	  
-	}
-      
-      else if( (int)queuedJobs.size() > 0 ) 
-	{
-
-	  list<Worker *>::iterator ww;
-	  int spilled_over_jobs=0;
-	
-		int qsize = queuedJobs.size();
-	  int jobs_per_worker;
-	  map<int, int> jobsPerWorkerMap = calcJobsToScheduleBasedOnLoad(qsize);
-			
-	  //when the no. of jobs are less than workers and if all the jobs spill. Then, spilled
-	  //jobs get accumulated, although they aren't removed from queue. Prevents this problem.
-	  int count_for_jobs = queuedJobs.size(); 
-			
-	  //iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
-	  for(ww=workers.begin();ww!=workers.end();ww++)
-	    {
-	      int wid = (*ww)->getWorkerID();
-			  
-	      if((*ww)->isAcceptingJobs() && count_for_jobs>0 && jobsPerWorkerMap[wid] > 0) //new condition added Dec 17th
-		{
-		  long time_until_next_charging_tick = timeTillNextChargingTick((*ww));
-		  jobs_per_worker = jobsPerWorkerMap[wid];
-		  long worst_time_required_for_jobs_in_q = jobs_per_worker*getSlowestJobTime();
-					
-				
-		  /*checking if we need new nodes or not*/
-		  if(worst_time_required_for_jobs_in_q > time_until_next_charging_tick ) 
-		    {
-		      //now we have to send some jobs to current worker and some jobs to added to spilled_over_jobs
-		      int jobs_to_be_sent = ( (time_until_next_charging_tick/getSlowestJobTime()) <= 1 ) ? 1 : (time_until_next_charging_tick/getSlowestJobTime()); 
-						
-		      //fetching jobs from queue
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_to_be_sent);
-						
-		      /*sending jobs to this worker*/
-		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
-		      if(successful)
-			{
-			  markJobsAsStarted(jobsForThisWorker, wid);
-			  stringstream s;
-			  s<<"Scheduler submitted "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());
-			  //jobsForThisWorker.clear();
-			}
-		      else
-			{//this would never happen - just being consistent
-			  stringstream s;
-			  s<<"Unable to submit "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());		    
-			  cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-			  sleep(1);
-			  exit(1);
-			}
-		      /*sending jobs code ends here*/
-		      //spilled jobs for each worker are accumulated so that we can decide how many new nods to start for them 
-		      spilled_over_jobs += (jobs_per_worker - jobs_to_be_sent);
-
-		    }
-					
-					
-		  else //means that the jobs_per_worker are feasible for this worker
-		    {
-		      //fetching job objects from queue						
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_worker);
-						
-		      /*sending jobs to this worker*/
-		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
-		      if(successful)
-			{
-			  markJobsAsStarted(jobsForThisWorker, wid);
-			  stringstream s;
-			  s<<"Submitted "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<" because these jobs will complete before the next charging tick"<<endl;
-			  log->decision(s.str());
-			}
-		      else
-			{//this would never happen - just being consistent
-       			
-			  stringstream s;
-			  s<<"Unable to submit "<<jobsForThisWorker.size()<<
-			    " jobs to worker "<<wid<<endl;
-			  log->decision(s.str());		   
-			  cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
-			  exit(1);
-			}
-		      /*sending jobs code ends here*/
-						
-		    }
-		}
-	      count_for_jobs -- ;
-	    }
-
-			
-	      /*************
-	     	Handling Spilled Over Jobs 
-	      **************/	
-	
-			
-	  if(spilled_over_jobs > 0) 
-	    {
-	      list<Worker *>::iterator work;
-	      list<Worker*> existingWorkers;
-	      int count=0;
-	      for(work=workers.begin();work!=workers.end();work++)
-		{
-		  if((!(*work)->isAcceptingJobs()) && ((*work)->getState() != OFFLINE) )
-		    {
-		      existingWorkers.push_back((*work));
-		      count++;
-		    }
-		}
-				
-	      if (count>0) { //if there are already nodes that are booting up, spilled_jobs should be sent to them - we dont start new nodes in this case
-		int jobsperworker = ((spilled_over_jobs /count ) == 0 ? spilled_over_jobs :spilled_over_jobs/count);
-					
-		if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
-		  Worker *wrkr = existingWorkers.front();
-		  list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
-		  list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
-						
-		  list<Job>::iterator it;
-		  it = sjobs.begin();
-		  sjobs.splice(it, jobsForThisWorker);
-		  spilledJobsMap[wrkr->getWorkerID()] = sjobs;
-						
-		}
-					
-		else {//splitting the jobs evenly to all workers which are still booting up
-		  list<Worker *>::iterator nw;
-		  for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
-		    {
-		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
-		      list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
-		      list<Job>::iterator it;
-		      it = sjobs.begin();
-		      sjobs.splice(it, jobsForThisWorker);
-		      spilledJobsMap[(*nw)->getWorkerID()] = sjobs;
-		      stringstream s;
-		      s<<"Scheduler has now assigned "<<sjobs.size()<<" jobs to worker "<<(*nw)->getWorkerID()<<". Jobs will sent when it has booted up"<<endl;
-		      log->decision(s.str());
-		    }
-		}
-					
-	      }
-				
-				
-	      else{ //it means that there are no nodes booting up - so starting up new nodes and send spilled_jobs to them
-						
-		//calculating the time(in milliseconds) required for spilled over jobs
-		long time_for_spilled_jobs = spilled_over_jobs*getSlowestJobTime();
-		double workers_to_be_started = ceil(((double)time_for_spilled_jobs/(CHARGINGTIME) ));
-					
-
-		// all jobs_per_worker (also in all of above) calculations will result in some excess jobs if jobs_per_worker/num_of_workers doesnt divide perfectly
-		// however the algorithm will work since the excess jobs will remain in queuedJobs
-		int jobs_per_new_worker = ((spilled_over_jobs /workers_to_be_started ) == 0 ? spilled_over_jobs :spilled_over_jobs/workers_to_be_started);
-					
-		//! if jobs per new worker are less than the workers to be started, then startup only jobs_per_new_worker number of nodes	
-		workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
-					
-		stringstream s;
-		s<<"Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" jobs which wont finish before the next charging tick. So starting new worker(s) here will improve Average response time.";
-		log->decision(s.str());
-		
-
-		list<int> newWorkerIDs = startupNewWorkers(workers_to_be_started);
-		list<int>::iterator n;
-					
-		//uniformly submitting jobs to the newWorkers
-		for(n=newWorkerIDs.begin();n!=newWorkerIDs.end();n++) 
-		  {
-		    list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_new_worker);
-						
-		    //adding it in map. Will be removed when jobs are scheduled
-		    spilledJobsMap[ (*n) ] = jobsForThisWorker;
-						
-		  }
-	      }
-				
-	    }
-			
-			
-	}
-    }
-	
-}
 
 long Scheduler::getChargingTimeConsideringPercentWaste()
 {
@@ -1255,41 +1291,6 @@ bool Scheduler::isScheduleTime() {
 
 }
 
-//! Runs the scheduler (e.g. start Worker nodes, stop Worker nodes, submitJobs) - will be executed at each clock tick by Simulator
-int Scheduler::runScheduler()
-{ 
-	
-  //doing initializations and stuff
-  doInitAndOtherStuff();
-	
-  //checking if its time to do some scheduling!
-  if(isScheduleTime()) {
-	  
-    gatherStatisticsFromAllWorkers();
-    print();
-	  
-    if(scheduler_mode == "S")
-      {
-	runSingleTaskScheduler();
-      }
-		
-    else if(scheduler_mode == "W")
-      {
-	runWebModeSchedulerImproved();
-      }
-				
-    else if(scheduler_mode == "R")
-      {
-	runRoundRobinScheduler();
-      }		
-				
-  }
-	
-  return 0; //returning successful exit everytime (for the time being)
-}
-
-
-
 
 WorkerStatistics* Scheduler::getWorkerStatsForWorker(int workerid)
 {
@@ -1373,7 +1374,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 		ws->setWorkerCostTillNow(cost, currenttime);
 		ws->setAvailableMemory(availmem, currenttime);
 		
-		s<<"[WORKERSTATS]\t(time:"<<getCurrentTime()<<")"
+		s<<"\n[WORKERSTATS]\t(time:"<<getCurrentTime()<<")"
 		<<"\twid:"<<wid
 		<<"\tqjobs:"<<ws->getNumberOfQueuedJobs()
 		<<"\tavgresptime:"<<ws->getAverageResponseTime()
