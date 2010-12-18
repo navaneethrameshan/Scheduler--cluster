@@ -1029,7 +1029,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 	
 
   //switch off idle workers if required
-  //	switchOffIdleWorkers();
+  switchOffIdleWorkers();
 	
   if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
     {
@@ -1331,7 +1331,7 @@ void Scheduler::switchOffIdleWorkers()
 			long time_since_on = (*it)->getTotalCPUTime();
 			if(time_since_on % (59*60*1000) == 0 && queuedJobs.size() == 0)
 			{
-				//stopping the worker node
+				//stopping the worker node at 59th Minute if there are no jobs in the schedulers queue
 				stopWorkerNode(wid);
 			}
 		}
