@@ -8,11 +8,13 @@
 
 using namespace std;
 unsigned long currentTime = 0;
+ofstream csv_file;
 
  Simulator::Simulator() {
   stopping = false;
   start_pos=0;
   logger = Logger::getLogger();
+  csv_file.open("output.csv");
 
 }
 
@@ -113,6 +115,7 @@ void Simulator::stop() {
 bool Simulator::cleanUp() {
   logRunningAverage();
   logTotals();
+  csv_file.close();
   return true;
 }
 
@@ -257,6 +260,8 @@ void Simulator::logRunningAverage() {
                         idle_workers_count,
                         computing_workers_count,
                         queued_jobs);
+
+  csv_file<<currentTime<<","<<avg_response_time<<","<<cost_so_far<<","<<idle_workers_count+computing_workers_count<<endl;
 }
 
 double Simulator::getWorkerAverages() {
