@@ -24,7 +24,9 @@ void Simulator::execute() {
   config = readSimulatorConfig();
   Scheduler *scheduler = new Scheduler(config->scheduler_mode,
                                        config->scheduling_interval,
-                                       config->scheduling_interval_for_clock);
+                                       config->scheduling_interval_for_clock,
+				       config->percentage_waste
+				       );
   //modified Nov-8
   int total_input = 0;
   string strings;
@@ -210,7 +212,8 @@ SIMULATOR_CONFIG* Simulator::readSimulatorConfig() {
   config->sliding_window = (int)strtod(values[9].c_str(), NULL);
   // polling interval 
   config->polling_interval = (int)strtod(values[10].c_str(), NULL);
-
+  //percentage_waste
+  config->percentage_waste = (int)strtod(values[11].c_str(), NULL);
   infile.close();
 
   return config;
@@ -234,7 +237,7 @@ void Simulator::logRunningAverage() {
 
     if( (*worker)->getState() == OFFLINE  ) {
       offline_workers_count++; 
-      cost_so_far += (*worker)->getTotalCost();
+      //cost_so_far += (*worker)->getTotalCost();
     }
     if( (*worker)->getState() == IDLE  ) {
       idle_workers_count++;

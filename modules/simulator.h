@@ -24,6 +24,7 @@ struct SIMULATOR_CONFIG {
   float worker_node_cost;
   int sliding_window; // seconds
   int polling_interval; // seconds
+  int percentage_waste;
 };
 
 class Simulator {  

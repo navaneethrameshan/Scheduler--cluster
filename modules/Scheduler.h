@@ -30,6 +30,7 @@ private:
 	string scheduler_mode;
 	float scheduling_interval;
 	unsigned short scheduling_interval_for_clock;
+	int percentage_waste;
 	long milliseconds; 
 	bool isFirstTime;
 	
@@ -49,7 +50,7 @@ private:
 public:
 	// constructor
 	Scheduler(string scheduler_mode, float scheduling_interval, 
-			  unsigned short interval_for_clock);
+		  unsigned short interval_for_clock, int percent_waste);
 	
 	//this function will start a worker and return its worker_id
 	unsigned int startWorkerNode();
@@ -153,6 +154,12 @@ public:
 	list<Worker*> getListOfActiveWorkers();
 	list<Job> fetchJobsFromQueueRandomly(int num_jobs);
 	
+	/*
+	  SINGLE TASK SCHEDULING
+	 */
+	long getChargingTimeConsideringPercentWaste();
+
+
 	// outputs the current state of a Scheduler object (can be static also; will be decided later on)
 	void print();
 };
