@@ -17,8 +17,8 @@ unsigned long currentTime = 0;
 
 
 void Simulator::execute() {
-  Job job1[1000] [100];
-  Task task1[1000];
+  Job job1[100] [1000];
+  Task task1[100];
   config = readSimulatorConfig();
   Scheduler *scheduler = new Scheduler(config->scheduler_mode,
                                        config->scheduling_interval,

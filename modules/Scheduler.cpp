@@ -149,6 +149,7 @@ void Scheduler::runRoundRobinScheduler()
 			int jobs_per_worker = ((qsize/num_of_workers) == 0 ? 1 : (qsize/num_of_workers));
 			
 			int count_for_jobs = queuedJobs.size(); 
+			cout<<"RoundRobin Queued Size: "<< count_for_jobs << endl;
 			
 			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
 			list<Worker*>::iterator ww;
@@ -163,6 +164,7 @@ void Scheduler::runRoundRobinScheduler()
 					cout<<"RoundRobin jobs_per_worker "<<jobs_per_worker<<endl;
 					
 					//fetching job objects from queue
+					cout << "Here "<<endl;
 					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
 					
 					/*sending jobs to this worker*/
@@ -191,8 +193,9 @@ void Scheduler::runRoundRobinScheduler()
 				}
 				
 	
-				}
 				count_for_jobs--;
+				}
+				
 			}
 	}
 }

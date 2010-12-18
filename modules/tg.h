@@ -19,7 +19,7 @@ class Taskgen{
 
 	public:
 	Taskgen(Scheduler *sched);
-	list<Task > create_task(Task *given_task, Job job[][100], int total_input);
+	list<Task > create_task(Task *given_task, Job job[][1000], int total_input);
 	void add_task_list(Task *given_task);
 	int add_job_list(Task *given_task, int rate, int start_pos);
 	void send_task();
