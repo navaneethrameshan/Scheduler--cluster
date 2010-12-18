@@ -31,6 +31,7 @@ using namespace std;
     number_of_running_jobs = 0;
     number_of_queued_jobs = 0;
     number_of_submitted_jobs = 0;
+	  number_of_total_submitted_jobs=0;
     worker_duration_till_now = 0;
     worker_cost_till_now = 0;
     created_time = createdtime;

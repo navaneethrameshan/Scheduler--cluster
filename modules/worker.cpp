@@ -78,7 +78,7 @@ bool Worker::submitJobs(list<Job> newjobs) {
     list<Job>::iterator newjob;
     for (newjob = newjobs.begin(); newjob != newjobs.end(); ++newjob) {
       //logger->workerInt("Job ID received", (*newjob).getJobID());
-      (*newjob).setStartedTime();
+      //(*newjob).setStartedTime();
       jobs.push_back(*newjob); // todo: should check max size
     }
     return true;

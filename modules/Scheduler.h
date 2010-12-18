@@ -78,8 +78,12 @@ public:
 	//Returns the WorkerStats object for a specific worker. Returns NULL if not found.
 	WorkerStatistics* getWorkerStatsForWorker(int workerid);
 	
-	//runs the Round Robin Scheduler
+	//runs the Robin web Scheduler
+	void roundRobinWeb();
+
+	//runs the Robin web Scheduler
 	void runRoundRobinScheduler();
+
 	
 	//Do Initializations and stuff - basically whatver stuff that needs to be done before doing actual scheduling
 	void doInitAndOtherStuff();
@@ -146,6 +150,8 @@ public:
 	map<int,double> calcLoadBasedOnNumWorkers();
 	void sendQueuedJobsToIdleWorkers();
 	int getNumberOfIdleWorkers();
+	list<Worker*> getListOfActiveWorkers();
+	list<Job> fetchJobsFromQueueRandomly(int num_jobs);
 	
 	// outputs the current state of a Scheduler object (can be static also; will be decided later on)
 	void print();

@@ -8,7 +8,7 @@
 #include "WorkerStatistics.h"
 using namespace std;
 
-#define CHARGINGTIME 20*60*1000
+#define CHARGINGTIME 1*60*1000
 
 int milliseconds; 
 list<Worker *>::iterator j;
@@ -78,6 +78,7 @@ int Scheduler::submitJobs(list<Job > jobs)
 	list<Job >::iterator i;
 	for(i=jobs.begin(); i!=jobs.end();++i)
 	{
+		(*i).setStartedTime();
 	    queuedJobs.push_back(*i);	
 	}
 	return 0;
@@ -106,7 +107,98 @@ long Scheduler::getCurrentTime()
 	return milliseconds;
 }
 
+list<Worker*> Scheduler::getListOfActiveWorkers() 
+{
+	
+	list<Worker*>::iterator ww;
+	list<Worker*> activeWorkers;
+	int wcount;
+	
+	for(ww=workers.begin();ww!=workers.end();ww++)
+	{
+		if((*ww)->isAcceptingJobs())
+		{
+			wcount++;
+			activeWorkers.push_back((*ww));
+		}
+	}
+	return activeWorkers;
+	
+}
+
+
 void Scheduler::runRoundRobinScheduler()
+{
+	
+	
+    if( (int)queuedJobs.size() == 0 && (int)this->runningJobs.size() == 0 )
+	{
+		log->decision("Nothing to do, so chilling!");
+		return;
+	}
+    else 
+	{
+		if( (int)queuedJobs.size() > 0) 
+		{
+			list<Worker*> activeWorkers = getListOfActiveWorkers();
+			int num_of_workers = activeWorkers.size();
+			if (num_of_workers ==0) {
+				return;
+			}
+			int qsize = queuedJobs.size();
+			int jobs_per_worker = ((qsize/num_of_workers) == 0 ? 1 : (qsize/num_of_workers));
+			
+			int count_for_jobs = queuedJobs.size(); 
+			
+			//iterating through all workers, sending them jobs as required and accumulating the spilled over jobs
+			list<Worker*>::iterator ww;
+			for(ww=activeWorkers.begin();ww!=activeWorkers.end();ww++)
+			{
+				if( count_for_jobs>0 )
+				{
+					cout<<" RoundRobin Count remaining: "<< count_for_jobs <<endl;
+					int wid = (*ww)->getWorkerID();
+					
+					//cout<<getCurrentTime()<<" Webmode slowest job time: "<<getSlowestJobTime()<<endl;
+					cout<<"RoundRobin jobs_per_worker "<<jobs_per_worker<<endl;
+					
+					//fetching job objects from queue
+					list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
+					
+					/*sending jobs to this worker*/
+					bool successful = (*ww)->submitJobs(jobsForThisWorker);
+					if(successful)
+					{
+						markJobsAsStarted(jobsForThisWorker, wid);
+						stringstream s;
+						s<<"RoundRobin Submitted "<<jobsForThisWorker.size()<<
+						" jobs to worker "<<wid<<endl;
+						log->decision(s.str());
+					}
+					else
+					{
+						
+						//TODO: insert jobs back to queue *************** 
+						stringstream s;
+						s<<"Unable to submit "<<jobsForThisWorker.size()<<
+						" jobs to worker "<<wid<<endl;
+						log->decision(s.str());		   
+						cout<<"FATAL: jobs should be inserted to queuedJobs"<<endl;
+						exit(1);
+					}
+					/*sending jobs code ends here*/
+					
+				}
+				
+	
+				}
+				count_for_jobs--;
+			}
+	}
+}
+
+
+void Scheduler:: roundRobinWeb()
 {
 	
 	
@@ -384,7 +476,7 @@ void Scheduler::runWebModeScheduler()
 		if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
 		{
 			//running the round robin scheduler if no job has completed yet
-			runRoundRobinScheduler();
+			 roundRobinWeb();
 			cout<<getCurrentTime()<<" Webmode round roubin scheduler executed\n";
 	 	}
 		else if( (int)queuedJobs.size() > 0 ) 
@@ -663,11 +755,8 @@ map<int,double> Scheduler::calcLoadBasedOnNumWorkers()
 		{
 		int wid = (*i)->getWorkerID();
 		WorkerStatistics *ws = getWorkerStatsForWorker(wid);
-		int num_sjobs = ws->getNumberOfSubmittedJobs();
+		int num_sjobs = ws->getNumberOfSubmittedJobs()+1 ;
 		//Hack: if num of jobs in a worker is 0, make it 1.
-		if (num_sjobs == 0) {
-			num_sjobs =1;
-		}
 		total_jobs += num_sjobs;
 		
 		workerLoad[wid] = num_sjobs;
@@ -784,7 +873,7 @@ void Scheduler::runWebModeSchedulerImproved(){
       if( (int)queuedJobs.size() > 0 && (getSlowestJobTime()==-1) ) 
 	{
 	  //running the round robin scheduler if no job has completed yet
-	  runRoundRobinScheduler();
+	   roundRobinWeb();
 	  cout<<getCurrentTime()<<" Webmode round robin scheduler executed\n";
 	}
 
@@ -858,7 +947,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 		      cout<<getCurrentTime()<<"Webmode Jobs to be sent: "<<jobs_to_be_sent<<endl;
 						
 		      //fetching jobs from queue
-		      list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_to_be_sent);
+		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_to_be_sent);
 						
 		      /*sending jobs to this worker*/
 		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
@@ -896,7 +985,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 		      cout<<getCurrentTime()<<" queuedJobs.size() 3: "<<queuedJobs.size()<<endl;
 		      //fetching job objects from queue
 						
-		      list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_worker);
+		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_worker);
 						
 		      /*sending jobs to this worker*/
 		      bool successful = (*ww)->submitJobs(jobsForThisWorker);
@@ -956,7 +1045,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 		if(spilled_over_jobs < count) {//means that we dont have enough jobs for all workers, so submitting to first available worker
 		  Worker *wrkr = existingWorkers.front();
 		  cout<<getCurrentTime()<<" queuedJobs.size() 4:"<<queuedJobs.size()<<endl;
-		  list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
+		  list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
 		  list<Job> sjobs = spilledJobsMap[wrkr->getWorkerID()];
 						
 		  cout<<"Webmode if spill sjobs size before splicing: "<<sjobs.size()<<endl;
@@ -974,7 +1063,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 		  for(nw=existingWorkers.begin();nw!=existingWorkers.end();nw++)
 		    {
 		      cout<<getCurrentTime()<<" queuedJobs.size() 5:"<<queuedJobs.size()<<endl;
-		      list<Job> jobsForThisWorker = fetchJobsFromQueue(jobsperworker);
+		      list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobsperworker);
 		      list<Job> sjobs = spilledJobsMap[((*nw)->getWorkerID())];
 		      cout<<"Webmode else spill sjobs size before splicing: "<<sjobs.size()<<endl;
 		      list<Job>::iterator it;
@@ -1017,9 +1106,10 @@ void Scheduler::runWebModeSchedulerImproved(){
 		//TODO: Problem: The value 1 is a hack to get this working. Must be improved!
 		workers_to_be_started = (jobs_per_new_worker<workers_to_be_started) ? 1 : workers_to_be_started;
 					
-		stringstream s;
-		s<<"Webmode Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs which will take "<<time_for_spilled_jobs<<"ms in total"<<endl;
-		log->decision(s.str());
+					stringstream s;
+					s<<"Webmode Scheduler will now startup "<<workers_to_be_started<<" new nodes because there are "<<spilled_over_jobs<<" spilled over jobs";
+					log->decision(s.str());
+				
 					
 		//TODO: problem: Handle case where, if the no. of workers to be started is more than the no. of workers in the config file.
 		//causes SEG FAULT, if not handled!
@@ -1034,7 +1124,7 @@ void Scheduler::runWebModeSchedulerImproved(){
 		  {
 		    cout<<getCurrentTime()<<" Webmode new worker created\n";
 		    cout<<getCurrentTime()<<" queuedJobs.size() 6:"<<queuedJobs.size()<<endl;
-		    list<Job> jobsForThisWorker = fetchJobsFromQueue(jobs_per_new_worker);
+		    list<Job> jobsForThisWorker = fetchJobsFromQueueRandomly(jobs_per_new_worker);
 						
 		    //adding it in map. Will be removed when jobs are scheduled
 		    cout<<getCurrentTime()<<" Webmode Added list of spilled jobs to worker ID: "<< (*n) <<endl;
@@ -1223,6 +1313,33 @@ list<Job> Scheduler::fetchJobsFromQueue(int num_jobs)
 	
 	return fetchedJobs;
 }
+
+//fetches jobs randomly from the queue
+list<Job> Scheduler::fetchJobsFromQueueRandomly(int num_jobs)
+{
+	
+	list<Job> randJobsList;
+	int jcount=0;
+	list<Job>::iterator it;
+	srand(1);
+	
+	while(jcount<num_jobs)
+	{
+		it = queuedJobs.begin();
+		int rand_val = rand()%queuedJobs.size();
+		cout<<getCurrentTime()<<"IMP rand_val:"<<rand_val<<" queuedJobs.size():"<<queuedJobs.size()<<endl;
+		
+		for(int i=0;i<rand_val;i++)
+			it++;
+		
+		randJobsList.push_back((*it));
+		queuedJobs.erase(it);
+		jcount++;
+	}
+	
+	return randJobsList;
+}
+
 bool Scheduler::isScheduleTime() {
 
   return (  (milliseconds)%(short)(scheduling_interval*1000) == 0) || (milliseconds == 1   );
@@ -1249,7 +1366,6 @@ int Scheduler::runScheduler()
 		{
 			//running the web mode scheduler
 			runWebModeScheduler();
-			
 		}
 		
 		else if(scheduler_mode == "I")
@@ -1261,6 +1377,11 @@ int Scheduler::runScheduler()
 		{
 			//running the round robin scheduler
 			runRoundRobinScheduler();
+		}
+		
+		else if(scheduler_mode == "E")
+		{
+			roundRobinWeb();
 		}
 		//gathering statistics of all workers
 		//gatherStatisticsFromAllWorkers();
@@ -1371,7 +1492,7 @@ void Scheduler::gatherStatisticsFromAllWorkers() {
 		<<"\tcost:"<<ws->getWorkerCostTillNow()
 		<<"\tavailmem:"<<ws->getAvailableMemory()
 		<<"\tsubmittedjobsinprogress:"<<ws->getNumberOfSubmittedJobs()
-		 <<"\totalsubmittedjobs: "<<ws->getNumberOfTotalSubmittedJobs()
+		 <<"\ttotalsubmittedjobs: "<<ws->getNumberOfTotalSubmittedJobs()
 		<<endl;
 		}
     }
