@@ -1,10 +1,8 @@
 //!@version 0.1
-//!@author Was/Nav/Marc
-//!@date November 9th, 2010
+//!@author Wasif/Navaneeth/Marcus
+//!@date December 18th, 2010
 //!@note Scheduler header file
 
-/*! \brief A chess piece
- * The abstract parent of all chess pieces. */
 
 #ifndef __SCHEDULER__
 #define __SCHEDULER__
@@ -145,7 +143,7 @@ public:
 	
 	
 	/*
-	 WEB MODE SCHEUDLING IMPROVED
+	 WEB MODE SCHEUDLING IMPROVED functions
 	 */
 	map<int,int> calcJobsToScheduleBasedOnLoad(int num_jobs_to_be_scheduled);
 	map<int,double> calcLoadBasedOnNumWorkers();
@@ -155,7 +153,7 @@ public:
 	list<Job> fetchJobsFromQueueRandomly(int num_jobs);
 	
 	/*
-	  SINGLE TASK SCHEDULING
+	  SINGLE TASK SCHEDULING Functions
 	 */
 	long getChargingTimeConsideringPercentWaste();
 
