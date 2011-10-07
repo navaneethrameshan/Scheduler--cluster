@@ -20,10 +20,6 @@ To generate graphs:
 Cleanup:
       Type 'make clean'
 
-Known issues: 
-      - Instructions per unit of time not correct, thus cost value is weird
-      - Single or web mode isn't handled as it is scheduled using round-robin
-
 Dependencies:
       - Python and gnuplot for generating graphs
 
